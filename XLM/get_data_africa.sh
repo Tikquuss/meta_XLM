@@ -53,8 +53,25 @@ echo "*** Cleaning and tokenizing $pair data ... ***"
 for lg in $(echo $pair | sed -e 's/\-/ /g'); do
   if [ ! -f $PARA_PATH/${pair}/$pair.$lg.all ]; then
     if [ $N_SAMPLES = "false" ];then
-      cat $PARA_PATH/${pair}/$pair.$lg.txt | $TOKENIZE $lg $threads_for_tokenizer | python $LOWER_REMOVE_ACCENT > $PARA_PATH/${pair}/$pair.$lg.all
-      #cp $PARA_PATH/${pair}/$SRC.$pair.$lg $PARA_PATH/${pair}/$pair.$lg.all
+      if [ $lg = "Anglais"] || [ $lg = "Francais"]; then 
+        cat $PARA_PATH/${pair}/$pair.$lg.txt | $TOKENIZE $lg $threads_for_tokenizer | python $LOWER_REMOVE_ACCENT > $PARA_PATH/${pair}/$pair.$lg.all
+      else
+        # On ne fait pas de lower case et remove accent sur les langues africaines
+        cat $PARA_PATH/${pair}/$pair.$lg.txt | $TOKENIZE $lg $threads_for_tokenizer > $PARA_PATH/${pair}/$pair.$lg.all
+      fi
+      # Si les données monolingues sont disponibles pour une langue donnée
+      if [ ! -d $MONO_PATH/$lg ]; then
+        if [ ! -f $MONO_PATH/$lg/$lg.all ]; then
+          if [ $lg = "Anglais"] || [ $lg = "Francais"]; then 
+            cat $MONO_PATH/$lg/$lg.txt | $TOKENIZE $lg $threads_for_tokenizer | python $LOWER_REMOVE_ACCENT > $MONO_PATH/$lg/$lg.all
+          else
+            # On ne fait pas de lower case et remove accent sur les langues africaines
+            cat $MONO_PATH/$lg/$lg.txt | $TOKENIZE $lg $threads_for_tokenizer > $MONO_PATH/$lg/$lg.all
+          fi
+        else
+          echo "file $MONO_PATH/$lg/$lg.all already exists"
+        fi
+      fi
     else
       cat $PARA_PATH/${pair}/$pair.$lg.txt > $PARA_PATH/${pair}/all.$pair.$lg
       get_n_samples $PARA_PATH/${pair}/all.$pair.$lg $N_SAMPLES $PARA_PATH/${pair}/samples.$pair.$lg
@@ -87,6 +104,9 @@ split_data() {
 
 for lg in $(echo $pair | sed -e 's/\-/ /g'); do
   split_data $PARA_PATH/${pair}/$pair.$lg.all $PARA_PATH/${pair}/$pair.$lg.train $PARA_PATH/${pair}/$pair.$lg.valid $PARA_PATH/${pair}/$pair.$lg.test $test_size $val_size
+  if [ -f $MONO_PATH/$lg/$lg.all ]; then
+    split_data $MONO_PATH/$lg/$lg.all $MONO_PATH/$lg/$lg.train $MONO_PATH/$lg/$lg.valid $MONO_PATH/$lg/$lg.test $test_size $val_size 
+  fi
 done
 
 echo -e "\n\n"
@@ -97,6 +117,9 @@ echo "***shuf ... Generating $shuf_n_samples random permutations of train data a
 if [ ! -f $OUTPATH/${pair}/bpe.train ]; then
   for lg in $(echo $pair | sed -e 's/\-/ /g'); do
     shuf -r -n $shuf_n_samples $PARA_PATH/${pair}/$pair.$lg.train >> $OUTPATH/${pair}/bpe.train
+    if [ -f $MONO_PATH/$lg/$lg.train ]; then
+      shuf -r -n $shuf_n_samples $MONO_PATH/$lg/$lg.train >> $OUTPATH/${pair}/bpe.train 
+    fi
   done
 else
   #rm $OUTPATH/${pair}/bpe.train
@@ -133,6 +156,10 @@ for lg in $(echo $pair | sed -e 's/\-/ /g'); do
   for split in train valid test; do
     $FASTBPE applybpe $OUTPATH/${pair}/$pair.$lg.$split $PARA_PATH/${pair}/$pair.$lg.$split $OUTPATH/${pair}/codes
     python preprocess.py $OUTPATH/${pair}/vocab $OUTPATH/${pair}/$pair.$lg.$split
+    if [ -f $MONO_PATH/$lg/$lg.$split ]; then
+      $FASTBPE applybpe $OUTPATH/${pair}/$lg.$split $MONO_PATH/$lg/$lg.$split $OUTPATH/${pair}/codes
+      python preprocess.py $OUTPATH/${pair}/vocab $OUTPATH/${pair}/$lg.$split
+    fi
   done
 done
 
@@ -140,7 +167,9 @@ echo -e "\n"
 echo "***Using parallel data to construct monolingual data***"
 for lg in $(echo $pair | sed -e 's/\-/ /g'); do
   for split in train valid test; do
-    cp $OUTPATH/${pair}/$pair.$lg.$split.pth $OUTPATH/${pair}/$split.$lg.pth
+    if [ ! -f $OUTPATH/${pair}/$split.$lg.pth ]; then
+      cp $OUTPATH/${pair}/$pair.$lg.$split.pth $OUTPATH/${pair}/$split.$lg.pth
+    fi
   done
 done
 
