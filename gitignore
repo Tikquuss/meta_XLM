@@ -1,7 +1,7 @@
 # tools, data, and dumped models
 # /tools
-/data
-data
+/data/*
+data/*
 /XLM_original/data
 /XLM_our/data
 /XLM_original/dumped
