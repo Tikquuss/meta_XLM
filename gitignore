@@ -1,61 +1,67 @@
 # tools, data, and dumped models
 # /tools
-/XLM/data
-/XLM/dumped
-/XLM/apex
+/data
+/XLM_original/data
+/XLM_our/data
+/XLM_original/dumped
+/XLM_our/dumped
+/dumped
+/XLM_original/apex
+/XLM_our/apex
+/apex
 
 # Created by https://www.gitignore.io/api/python
 # Edit at https://www.gitignore.io/?templates=python
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
-XLM/__pycache__/
+*/__pycache__/
 __pycache__/
-XLM/*.py[cod]
+*/*.py[cod]
 *.py[cod]
-XLM/*$py.class
+*/*$py.class
 *$py.class
 
 # C extensions
-XLM/*.so
+*/*.so
 *.so
 
 # Distribution / packaging
-XLM/.Python
+*/.Python
 .Python
-XLM/build/
+*/build/
 build/
-XLM/develop-eggs/
+*/develop-eggs/
 evelop-eggs/
-XLM/dist/
+*/dist/
 dist/
-XLM/downloads/
+*/downloads/
 downloads/
-XLM/eggs/
+*/eggs/
 eggs/
-.XLM/eggs/
+.*/eggs/
 eggs/
-XLM/lib/
+*/lib/
 lib/
-XLM/lib64/
+*/lib64/
 lib64/
-XLM/parts/
+*/parts/
 parts/
-XLM/sdist/
+*/sdist/
 sdist/
-XLM/var/
+*/var/
 var/
-XLM/wheels/
+*/wheels/
 wheels/
-XLM/share/python-wheels/
+*/share/python-wheels/
 share/python-wheels/
-XLM/*.egg-info/
+*/*.egg-info/
 *.egg-info/
-XLM/.installed.cfg
+*/.installed.cfg
 .installed.cfg
-XLM/*.egg
+*/*.egg
 *.egg
-XLM/MANIFEST
+*/MANIFEST
 MANIFEST
 
 # PyInstaller

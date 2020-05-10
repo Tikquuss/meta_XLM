@@ -1,0 +1,8 @@
+#!/bin/bash
+
+export CUDA_VISIBLE_DEVICES=0,1,2,3
+export NGPU=4
+
+python -m torch.distributed.launch --nproc_per_node=$NGPU python train.py --exp_name test_unsupMT_enfr --dump_path ./dumped/ --reload_model $reload_model --data_path $OUTPATH --lgs $lgs --ae_steps $ae_steps --mt_steps $mt_steps --bt_steps $bt_steps --word_shuffle 3 --word_dropout 0.1 --word_blank 0.1 --lambda_ae '0:1,100000:0.1,300000:0' --encoder_only false --emb_dim 1024 --n_layers 6 --n_heads 8 --dropout 0.1 --attention_dropout 0.1 --gelu_activation true --tokens_per_batch 2000 --batch_size $batch_size --bptt 256 --optimizer adam_inverse_sqrt,beta1=0.9,beta2=0.98,lr=0.0001 --epoch_size $epoch_size --eval_bleu $eval_bleu --stopping_criterion $stopping_criterion --validation_metrics $validation_metrics 
+
+#python train.py --exp_name test_unsupMT_enfr --dump_path ./dumped/ --reload_model $reload_model --data_path $OUTPATH --lgs $lgs --ae_steps $ae_steps --mt_steps $mt_steps --bt_steps $bt_steps --word_shuffle 3 --word_dropout 0.1 --word_blank 0.1 --lambda_ae '0:1,100000:0.1,300000:0' --encoder_only false --emb_dim 1024 --n_layers 6 --n_heads 8 --dropout 0.1 --attention_dropout 0.1 --gelu_activation true --tokens_per_batch 2000 --batch_size $batch_size --bptt 256 --optimizer adam_inverse_sqrt,beta1=0.9,beta2=0.98,lr=0.0001 --epoch_size $epoch_size --eval_bleu $eval_bleu --stopping_criterion $stopping_criterion --validation_metrics $validation_metrics 
