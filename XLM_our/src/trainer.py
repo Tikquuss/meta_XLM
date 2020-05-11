@@ -110,19 +110,25 @@ class Trainer(object):
         self.n_iter = 0
         self.n_total_iter = 0
         self.n_sentences = 0
-        self.stats = OrderedDict(
-            [('processed_s', 0), ('processed_w', 0)] +
-            [('CLM-%s' % l, []) for l in params.langs] +
-            [('CLM-%s-%s' % (l1, l2), []) for l1, l2 in data['para'].keys()] +
-            [('CLM-%s-%s' % (l2, l1), []) for l1, l2 in data['para'].keys()] +
-            [('MLM-%s' % l, []) for l in params.langs] +
-            [('MLM-%s-%s' % (l1, l2), []) for l1, l2 in data['para'].keys()] +
-            [('MLM-%s-%s' % (l2, l1), []) for l1, l2 in data['para'].keys()] +
-            [('PC-%s-%s' % (l1, l2), []) for l1, l2 in params.pc_steps] +
-            [('AE-%s' % lang, []) for lang in params.ae_steps] +
-            [('MT-%s-%s' % (l1, l2), []) for l1, l2 in params.mt_steps] +
-            [('BT-%s-%s-%s' % (l1, l2, l3), []) for l1, l2, l3 in params.bt_steps]
-        )
+        if not params.meta_learning :
+            self.stats = OrderedDict(
+                [('processed_s', 0), ('processed_w', 0)] +
+                [('CLM-%s' % l, []) for l in params.langs] +
+                [('CLM-%s-%s' % (l1, l2), []) for l1, l2 in data['para'].keys()] +
+                [('CLM-%s-%s' % (l2, l1), []) for l1, l2 in data['para'].keys()] +
+                [('MLM-%s' % l, []) for l in params.langs] +
+                [('MLM-%s-%s' % (l1, l2), []) for l1, l2 in data['para'].keys()] +
+                [('MLM-%s-%s' % (l2, l1), []) for l1, l2 in data['para'].keys()] +
+                [('PC-%s-%s' % (l1, l2), []) for l1, l2 in params.pc_steps] +
+                [('AE-%s' % lang, []) for lang in params.ae_steps] +
+                [('MT-%s-%s' % (l1, l2), []) for l1, l2 in params.mt_steps] +
+                [('BT-%s-%s-%s' % (l1, l2, l3), []) for l1, l2, l3 in params.bt_steps]
+            )
+        else :
+            # todo : gérer l'affichage des stat pour le meta_learning
+            self.stats = None
+            pass
+        
         self.last_time = time.time()
 
         # reload potential checkpoints
@@ -191,7 +197,7 @@ class Trainer(object):
             for opt_name, optimizer in zip(opt_names, optimizers)
         }
 
-    def optimize(self, loss):
+    def optimize(self, loss, retain_graph=False):
         """
         Optimize.
         """
@@ -210,7 +216,7 @@ class Trainer(object):
         if params.amp == -1:
             for optimizer in optimizers:
                 optimizer.zero_grad()
-            loss.backward()
+            loss.backward(retain_graph=retain_graph)
             if params.clip_grad_norm > 0:
                 for name in names:
                     # norm_check_a = (sum([p.grad.norm(p=2).item() ** 2 for p in self.parameters[name]])) ** 0.5
@@ -224,7 +230,8 @@ class Trainer(object):
         else:
             if self.n_iter % params.accumulate_gradients == 0:
                 with apex.amp.scale_loss(loss, optimizers) as scaled_loss:
-                    scaled_loss.backward()
+                    ##############
+                    scaled_loss.backward(retain_graph=retain_graph)
                 if params.clip_grad_norm > 0:
                     for name in names:
                         # norm_check_a = (sum([p.grad.norm(p=2).item() ** 2 for p in apex.amp.master_params(self.optimizers[name])])) ** 0.5
@@ -236,7 +243,8 @@ class Trainer(object):
                     optimizer.zero_grad()
             else:
                 with apex.amp.scale_loss(loss, optimizers, delay_unscale=True) as scaled_loss:
-                    scaled_loss.backward()
+                    #########
+                    scaled_loss.backward(retain_graph=retain_graph)
 
     def iter(self):
         """
@@ -282,17 +290,23 @@ class Trainer(object):
         # log speed + stats + learning rate
         logger.info(s_iter + s_speed + s_stat + s_lr)
 
-    def get_iterator(self, iter_name, lang1, lang2, stream):
+    def get_iterator(self, iter_name, lang1, lang2, stream, data_key=None):
         """
         Create a new iterator for a dataset.
         """
+        
+        # todo : commenter
+        data = self.data
+        if data_key :
+            data = data[data_key]
+            
         logger.info("Creating new training data iterator (%s) ..." % ','.join([str(x) for x in [iter_name, lang1, lang2] if x is not None]))
         assert stream or not self.params.use_memory or not self.params.mem_query_batchnorm
         if lang2 is None:
             if stream:
-                iterator = self.data['mono_stream'][lang1]['train'].get_iterator(shuffle=True)
+                iterator = data['mono_stream'][lang1]['train'].get_iterator(shuffle=True)
             else:
-                iterator = self.data['mono'][lang1]['train'].get_iterator(
+                iterator = data['mono'][lang1]['train'].get_iterator(
                     shuffle=True,
                     group_by_size=self.params.group_by_size,
                     n_sentences=-1,
@@ -300,7 +314,7 @@ class Trainer(object):
         else:
             assert stream is False
             _lang1, _lang2 = (lang1, lang2) if lang1 < lang2 else (lang2, lang1)
-            iterator = self.data['para'][(_lang1, _lang2)]['train'].get_iterator(
+            iterator = data['para'][(_lang1, _lang2)]['train'].get_iterator(
                 shuffle=True,
                 group_by_size=self.params.group_by_size,
                 n_sentences=-1,
@@ -309,7 +323,7 @@ class Trainer(object):
         self.iterators[(iter_name, lang1, lang2)] = iterator
         return iterator
 
-    def get_batch(self, iter_name, lang1, lang2=None, stream=False):
+    def get_batch(self, iter_name, lang1, lang2=None, stream=False, data_key=None):
         """
         Return a batch of sentences from a dataset.
         """
@@ -318,11 +332,11 @@ class Trainer(object):
         assert stream is False or lang2 is None
         iterator = self.iterators.get((iter_name, lang1, lang2), None)
         if iterator is None:
-            iterator = self.get_iterator(iter_name, lang1, lang2, stream)
+            iterator = self.get_iterator(iter_name, lang1, lang2, stream, data_key)
         try:
             x = next(iterator)
         except StopIteration:
-            iterator = self.get_iterator(iter_name, lang1, lang2, stream)
+            iterator = self.get_iterator(iter_name, lang1, lang2, stream, data_key)
             x = next(iterator)
         return x if lang2 is None or lang1 < lang2 else x[::-1]
 
@@ -468,7 +482,7 @@ class Trainer(object):
 
         return x, _x_real, pred_mask
 
-    def generate_batch(self, lang1, lang2, name):
+    def generate_batch(self, lang1, lang2, name, data_key=None):
         """
         Prepare a batch (for causal or non-causal mode).
         """
@@ -477,16 +491,16 @@ class Trainer(object):
         lang2_id = params.lang2id[lang2] if lang2 is not None else None
 
         if lang2 is None:
-            x, lengths = self.get_batch(name, lang1, stream=True)
+            x, lengths = self.get_batch(name, lang1, stream=True, data_key = data_key)
             positions = None
             langs = x.clone().fill_(lang1_id) if params.n_langs > 1 else None
         elif lang1 == lang2:
-            (x1, len1) = self.get_batch(name, lang1)
+            (x1, len1) = self.get_batch(name, lang1, data_key = data_key)
             (x2, len2) = (x1, len1)
             (x1, len1) = self.add_noise(x1, len1)
             x, lengths, positions, langs = concat_batches(x1, len1, lang1_id, x2, len2, lang2_id, params.pad_index, params.eos_index, reset_positions=False)
         else:
-            (x1, len1), (x2, len2) = self.get_batch(name, lang1, lang2)
+            (x1, len1), (x2, len2) = self.get_batch(name, lang1, lang2, data_key = data_key)
             x, lengths, positions, langs = concat_batches(x1, len1, lang1_id, x2, len2, lang2_id, params.pad_index, params.eos_index, reset_positions=True)
 
         return x, lengths, positions, langs, (None, None) if lang2 is None else (len1, len2)
@@ -667,35 +681,71 @@ class Trainer(object):
         name = 'model' if params.encoder_only else 'decoder'
         model = getattr(self, name)
         model.train()
+        
+        if not params.meta_learning :
+            # generate batch / select words to predict
+            x, lengths, positions, langs, _ = self.generate_batch(lang1, lang2, 'causal')
+            x, lengths, positions, langs, _ = self.round_batch(x, lengths, positions, langs)
+            alen = torch.arange(lengths.max(), dtype=torch.long, device=lengths.device)
+            pred_mask = alen[:, None] < lengths[None] - 1
+            if params.context_size > 0:  # do not predict without context
+                pred_mask[:params.context_size] = 0
+            y = x[1:].masked_select(pred_mask[:-1])
+            assert pred_mask.sum().item() == y.size(0)
 
-        # generate batch / select words to predict
-        x, lengths, positions, langs, _ = self.generate_batch(lang1, lang2, 'causal')
-        x, lengths, positions, langs, _ = self.round_batch(x, lengths, positions, langs)
-        alen = torch.arange(lengths.max(), dtype=torch.long, device=lengths.device)
-        pred_mask = alen[:, None] < lengths[None] - 1
-        if params.context_size > 0:  # do not predict without context
-            pred_mask[:params.context_size] = 0
-        y = x[1:].masked_select(pred_mask[:-1])
-        assert pred_mask.sum().item() == y.size(0)
+            # cuda
+            x, lengths, langs, pred_mask, y = to_cuda(x, lengths, langs, pred_mask, y)
 
-        # cuda
-        x, lengths, langs, pred_mask, y = to_cuda(x, lengths, langs, pred_mask, y)
+            # forward / loss
+            tensor = model('fwd', x=x, lengths=lengths, langs=langs, causal=True)
+            _, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=False)
+            self.stats[('CLM-%s' % lang1) if lang2 is None else ('CLM-%s-%s' % (lang1, lang2))].append(loss.item())
+            loss = lambda_coeff * loss
 
-        # forward / loss
-        tensor = model('fwd', x=x, lengths=lengths, langs=langs, causal=True)
-        _, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=False)
-        self.stats[('CLM-%s' % lang1) if lang2 is None else ('CLM-%s-%s' % (lang1, lang2))].append(loss.item())
-        loss = lambda_coeff * loss
+            # optimize
+            self.optimize(loss)
 
-        # optimize
-        self.optimize(loss)
+            # number of processed sentences / words
+            self.n_sentences += params.batch_size
+            self.stats['processed_s'] += lengths.size(0)
+            self.stats['processed_w'] += pred_mask.sum().item()
+        else :
+            lang1_list, lang2_list = lang1, lang2
+            total_loss = 0
+            for lang1, lang2 in zip(lang1_list, lang2_list) :
+                # generate batch / select words to predict
+                x, lengths, positions, langs, _ = self.generate_batch(lang1, lang2, 'causal')
+                x, lengths, positions, langs, _ = self.round_batch(x, lengths, positions, langs)
+                alen = torch.arange(lengths.max(), dtype=torch.long, device=lengths.device)
+                pred_mask = alen[:, None] < lengths[None] - 1
+                if params.context_size > 0:  # do not predict without context
+                    pred_mask[:params.context_size] = 0
+                y = x[1:].masked_select(pred_mask[:-1])
+                assert pred_mask.sum().item() == y.size(0)
 
-        # number of processed sentences / words
-        self.n_sentences += params.batch_size
-        self.stats['processed_s'] += lengths.size(0)
-        self.stats['processed_w'] += pred_mask.sum().item()
+                # cuda
+                x, lengths, langs, pred_mask, y = to_cuda(x, lengths, langs, pred_mask, y)
 
-    def mlm_step(self, lang1, lang2, lambda_coeff):
+                # forward / loss
+                tensor = model('fwd', x=x, lengths=lengths, langs=langs, causal=True)
+                _, task_loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=False)
+                self.stats[('CLM-%s' % lang1) if lang2 is None else ('CLM-%s-%s' % (lang1, lang2))].append(task_loss.item())
+                task_loss = lambda_coeff * task_loss
+                
+                total_loss = total_loss + task_loss
+                
+                # optimize
+                self.optimize(task_loss)
+
+                # number of processed sentences / words
+                self.n_sentences += params.batch_size
+                self.stats['processed_s'] += lengths.size(0)
+                self.stats['processed_w'] += pred_mask.sum().item()
+                
+            self.optimize(total_loss)
+            
+
+    def mlm_step(self, lang1, lang2, lambda_coeff, data_key=None):
         """
         Masked word prediction step.
         MLM objective is lang2 is None, TLM objective otherwise.
@@ -707,28 +757,72 @@ class Trainer(object):
         name = 'model' if params.encoder_only else 'encoder'
         model = getattr(self, name)
         model.train()
+        
+        if not params.meta_learning :
+            
+            print("lang1, lang2", lang1, lang2)
+            # generate batch / select words to predict
+            x, lengths, positions, langs, _ = self.generate_batch(lang1, lang2, 'pred')
+            x, lengths, positions, langs, _ = self.round_batch(x, lengths, positions, langs)
+            x, y, pred_mask = self.mask_out(x, lengths)
 
-        # generate batch / select words to predict
-        x, lengths, positions, langs, _ = self.generate_batch(lang1, lang2, 'pred')
-        x, lengths, positions, langs, _ = self.round_batch(x, lengths, positions, langs)
-        x, y, pred_mask = self.mask_out(x, lengths)
+            # cuda
+            x, y, pred_mask, lengths, positions, langs = to_cuda(x, y, pred_mask, lengths, positions, langs)
 
-        # cuda
-        x, y, pred_mask, lengths, positions, langs = to_cuda(x, y, pred_mask, lengths, positions, langs)
+            # forward / loss
+            tensor = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)
+            _, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=False)
+            self.stats[('MLM-%s' % lang1) if lang2 is None else ('MLM-%s-%s' % (lang1, lang2))].append(loss.item())
+            loss = lambda_coeff * loss
 
-        # forward / loss
-        tensor = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)
-        _, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=False)
-        self.stats[('MLM-%s' % lang1) if lang2 is None else ('MLM-%s-%s' % (lang1, lang2))].append(loss.item())
-        loss = lambda_coeff * loss
+            # optimize
+            self.optimize(loss)
 
-        # optimize
-        self.optimize(loss)
+            # number of processed sentences / words
+            self.n_sentences += params.batch_size
+            self.stats['processed_s'] += lengths.size(0)
+            self.stats['processed_w'] += pred_mask.sum().item()
+            
+        else :
+            # our
+            assert self.data[data_key], "todo "
+        
+            lang1_list, lang2_list = lang1, lang2
+            total_loss = 0
+            
+            for lang1, lang2 in zip(lang1_list, lang2_list) :
+                
+                # generate batch / select words to predict
+                x, lengths, positions, langs, _ = self.generate_batch(lang1, lang2, 'pred', data_key)
+                x, lengths, positions, langs, _ = self.round_batch(x, lengths, positions, langs)
+                x, y, pred_mask = self.mask_out(x, lengths)
 
-        # number of processed sentences / words
-        self.n_sentences += params.batch_size
-        self.stats['processed_s'] += lengths.size(0)
-        self.stats['processed_w'] += pred_mask.sum().item()
+                # cuda
+                x, y, pred_mask, lengths, positions, langs = to_cuda(x, y, pred_mask, lengths, positions, langs)
+
+                # forward / loss
+                tensor = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)
+                _, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=False)
+                #self.stats[('MLM-%s' % lang1) if lang2 is None else ('MLM-%s-%s' % (lang1, lang2))].append(loss.item())
+                loss = lambda_coeff * loss
+                
+                total_loss = total_loss + loss 
+
+                # optimize
+                #self.optimize(loss)
+                """
+                RuntimeError: Trying to backward through the graph a second time, but the buffers have already been freed. 
+                Specify retain_graph=True when calling backward the first time.
+                """
+                self.optimize(loss, retain_graph=True)
+
+                # number of processed sentences / words
+                self.n_sentences += params.batch_size
+                #self.stats['processed_s'] += lengths.size(0)
+                #self.stats['processed_w'] += pred_mask.sum().item()
+                
+            self.optimize(total_loss)
+            
 
     def pc_step(self, lang1, lang2, lambda_coeff):
         """

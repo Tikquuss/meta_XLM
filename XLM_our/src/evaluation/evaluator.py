@@ -99,7 +99,7 @@ class Evaluator(object):
             subprocess.Popen('mkdir -p %s' % params.hyp_path, shell=True).wait()
             self.create_reference_files()
 
-    def get_iterator(self, data_set, lang1, lang2=None, stream=False):
+    def get_iterator(self, data_set, lang1, lang2=None, stream=False, data_key = None):
         """
         Create a new iterator for a dataset.
         """
@@ -121,12 +121,17 @@ class Evaluator(object):
             # n_sentences = -1 if data_set == 'valid' else 100
             n_sentences = -1
             subsample = 1
-
+        
+        # todo : commenter
+        data = self.data
+        if data_key :
+            data = data[data_key]
+            
         if lang2 is None:
             if stream:
-                iterator = self.data['mono_stream'][lang1][data_set].get_iterator(shuffle=False, subsample=subsample)
+                iterator = data['mono_stream'][lang1][data_set].get_iterator(shuffle=False, subsample=subsample)
             else:
-                iterator = self.data['mono'][lang1][data_set].get_iterator(
+                iterator = data['mono'][lang1][data_set].get_iterator(
                     shuffle=False,
                     group_by_size=True,
                     n_sentences=n_sentences,
@@ -134,7 +139,7 @@ class Evaluator(object):
         else:
             assert stream is False
             _lang1, _lang2 = (lang1, lang2) if lang1 < lang2 else (lang2, lang1)
-            iterator = self.data['para'][(_lang1, _lang2)][data_set].get_iterator(
+            iterator = data['para'][(_lang1, _lang2)][data_set].get_iterator(
                 shuffle=False,
                 group_by_size=True,
                 n_sentences=n_sentences
@@ -149,44 +154,90 @@ class Evaluator(object):
         """
         params = self.params
         params.ref_paths = {}
+        if not params.meta_learning :
+                
+            for (lang1, lang2), v in self.data['para'].items():
 
-        for (lang1, lang2), v in self.data['para'].items():
+                assert lang1 < lang2
 
-            assert lang1 < lang2
+                for data_set in ['valid', 'test']:
 
-            for data_set in ['valid', 'test']:
+                    # define data paths
+                    lang1_path = os.path.join(params.hyp_path, 'ref.{0}-{1}.{2}.txt'.format(lang2, lang1, data_set))
+                    lang2_path = os.path.join(params.hyp_path, 'ref.{0}-{1}.{2}.txt'.format(lang1, lang2, data_set))
 
-                # define data paths
-                lang1_path = os.path.join(params.hyp_path, 'ref.{0}-{1}.{2}.txt'.format(lang2, lang1, data_set))
-                lang2_path = os.path.join(params.hyp_path, 'ref.{0}-{1}.{2}.txt'.format(lang1, lang2, data_set))
+                    # store data paths
+                    params.ref_paths[(lang2, lang1, data_set)] = lang1_path
+                    params.ref_paths[(lang1, lang2, data_set)] = lang2_path
 
-                # store data paths
-                params.ref_paths[(lang2, lang1, data_set)] = lang1_path
-                params.ref_paths[(lang1, lang2, data_set)] = lang2_path
+                    # text sentences
+                    lang1_txt = []
+                    lang2_txt = []
 
-                # text sentences
-                lang1_txt = []
-                lang2_txt = []
+                    # convert to text
+                    for (sent1, len1), (sent2, len2) in self.get_iterator(data_set, lang1, lang2):
+                        lang1_txt.extend(convert_to_text(sent1, len1, self.dico, params))
+                        lang2_txt.extend(convert_to_text(sent2, len2, self.dico, params))
 
-                # convert to text
-                for (sent1, len1), (sent2, len2) in self.get_iterator(data_set, lang1, lang2):
-                    lang1_txt.extend(convert_to_text(sent1, len1, self.dico, params))
-                    lang2_txt.extend(convert_to_text(sent2, len2, self.dico, params))
+                    # replace <unk> by <<unk>> as these tokens cannot be counted in BLEU
+                    lang1_txt = [x.replace('<unk>', '<<unk>>') for x in lang1_txt]
+                    lang2_txt = [x.replace('<unk>', '<<unk>>') for x in lang2_txt]
 
-                # replace <unk> by <<unk>> as these tokens cannot be counted in BLEU
-                lang1_txt = [x.replace('<unk>', '<<unk>>') for x in lang1_txt]
-                lang2_txt = [x.replace('<unk>', '<<unk>>') for x in lang2_txt]
+                    # export hypothesis
+                    with open(lang1_path, 'w', encoding='utf-8') as f:
+                        f.write('\n'.join(lang1_txt) + '\n')
+                    with open(lang2_path, 'w', encoding='utf-8') as f:
+                        f.write('\n'.join(lang2_txt) + '\n')
 
-                # export hypothesis
-                with open(lang1_path, 'w', encoding='utf-8') as f:
-                    f.write('\n'.join(lang1_txt) + '\n')
-                with open(lang2_path, 'w', encoding='utf-8') as f:
-                    f.write('\n'.join(lang2_txt) + '\n')
+                    # restore original segmentation
+                    restore_segmentation(lang1_path)
+                    restore_segmentation(lang2_path)
+        else :
+            # our 
+            #for k, data in self.data.items():
+            #    print(k, data, "\n")
 
-                # restore original segmentation
-                restore_segmentation(lang1_path)
-                restore_segmentation(lang2_path)
+            for data in self.data.values():
+                try :
+                    for (lang1, lang2), v in data['para'].items():
 
+                        assert lang1 < lang2
+
+                        for data_set in ['valid', 'test']:
+
+                            # define data paths
+                            lang1_path = os.path.join(params.hyp_path, 'ref.{0}-{1}.{2}.txt'.format(lang2, lang1, data_set))
+                            lang2_path = os.path.join(params.hyp_path, 'ref.{0}-{1}.{2}.txt'.format(lang1, lang2, data_set))
+
+                            # store data paths
+                            params.ref_paths[(lang2, lang1, data_set)] = lang1_path
+                            params.ref_paths[(lang1, lang2, data_set)] = lang2_path
+
+                            # text sentences
+                            lang1_txt = []
+                            lang2_txt = []
+
+                            # convert to text
+                            for (sent1, len1), (sent2, len2) in self.get_iterator(data_set, lang1, lang2):
+                                lang1_txt.extend(convert_to_text(sent1, len1, self.dico, params))
+                                lang2_txt.extend(convert_to_text(sent2, len2, self.dico, params))
+
+                            # replace <unk> by <<unk>> as these tokens cannot be counted in BLEU
+                            lang1_txt = [x.replace('<unk>', '<<unk>>') for x in lang1_txt]
+                            lang2_txt = [x.replace('<unk>', '<<unk>>') for x in lang2_txt]
+
+                            # export hypothesis
+                            with open(lang1_path, 'w', encoding='utf-8') as f:
+                                f.write('\n'.join(lang1_txt) + '\n')
+                            with open(lang2_path, 'w', encoding='utf-8') as f:
+                                f.write('\n'.join(lang2_txt) + '\n')
+
+                            # restore original segmentation
+                            restore_segmentation(lang1_path)
+                            restore_segmentation(lang2_path)
+                except :
+                    pass
+            
     def mask_out(self, x, lengths, rng):
         """
         Decide of random words to mask out.
@@ -234,7 +285,7 @@ class Evaluator(object):
 
                 # prediction task (evaluate perplexity and accuracy)
                 for lang1, lang2 in params.mlm_steps:
-                    self.evaluate_mlm(scores, data_set, lang1, lang2)
+                    self.evaluate_mlm(scores, data_set, lang1, lang2, data_key = "es-it")
 
                 # machine translation task (evaluate perplexity and accuracy)
                 for lang1, lang2 in set(params.mt_steps + [(l2, l3) for _, l2, l3 in params.bt_steps]):
@@ -253,7 +304,7 @@ class Evaluator(object):
 
         return scores
 
-    def evaluate_clm(self, scores, data_set, lang1, lang2):
+    def evaluate_clm(self, scores, data_set, lang1, lang2, data_key = None):
         """
         Evaluate perplexity and next word prediction accuracy.
         """
@@ -280,7 +331,7 @@ class Evaluator(object):
         if eval_memory:
             all_mem_att = {k: [] for k, _ in self.memory_list}
 
-        for batch in self.get_iterator(data_set, lang1, lang2, stream=(lang2 is None)):
+        for batch in self.get_iterator(data_set, lang1, lang2, stream=(lang2 is None), data_key = data_key):
 
             # batch
             if lang2 is None:
@@ -326,7 +377,7 @@ class Evaluator(object):
             for mem_name, mem_att in all_mem_att.items():
                 eval_memory_usage(scores, '%s_%s_%s' % (data_set, l1l2, mem_name), mem_att, params.mem_size)
 
-    def evaluate_mlm(self, scores, data_set, lang1, lang2):
+    def evaluate_mlm(self, scores, data_set, lang1, lang2, data_key = None):
         """
         Evaluate perplexity and next word prediction accuracy.
         """
@@ -355,7 +406,7 @@ class Evaluator(object):
         if eval_memory:
             all_mem_att = {k: [] for k, _ in self.memory_list}
 
-        for batch in self.get_iterator(data_set, lang1, lang2, stream=(lang2 is None)):
+        for batch in self.get_iterator(data_set, lang1, lang2, stream=(lang2 is None), data_key = data_key):
 
             # batch
             if lang2 is None:
