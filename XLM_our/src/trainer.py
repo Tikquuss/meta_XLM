@@ -126,7 +126,9 @@ class Trainer(object):
             )
         else :
             # todo : gérer l'affichage des stat pour le meta_learning
-            self.stats = None
+            self.stats = OrderedDict(
+                [('processed_s', 0), ('processed_w', 0)]
+            )
             pass
         
         self.last_time = time.time()
@@ -284,7 +286,6 @@ class Trainer(object):
             self.stats['processed_w'] * 1.0 / diff
         )
         self.stats['processed_s'] = 0
-        self.stats['processed_w'] = 0
         self.last_time = new_time
 
         # log speed + stats + learning rate
@@ -327,8 +328,12 @@ class Trainer(object):
         """
         Return a batch of sentences from a dataset.
         """
-        assert lang1 in self.params.langs
-        assert lang2 is None or lang2 in self.params.langs
+        params = self.params
+        if data_key :
+            params = self.params.meta_params[data_key]
+        
+        assert lang1 in params.langs
+        assert lang2 is None or lang2 in params.langs
         assert stream is False or lang2 is None
         iterator = self.iterators.get((iter_name, lang1, lang2), None)
         if iterator is None:
@@ -434,11 +439,16 @@ class Trainer(object):
         words, lengths = self.word_blank(words, lengths)
         return words, lengths
 
-    def mask_out(self, x, lengths):
+    def mask_out(self, x, lengths, data_key = None):
         """
         Decide of random words to mask out, and what target they get assigned.
         """
         params = self.params
+        if data_key :
+            params = self.params.meta_params[data_key]
+            # todo
+            params.pred_probs = self.params.pred_probs
+            
         slen, bs = x.size()
 
         # define target words to predict
@@ -486,7 +496,11 @@ class Trainer(object):
         """
         Prepare a batch (for causal or non-causal mode).
         """
+        #######
         params = self.params
+        if data_key :
+            params = self.params.meta_params[data_key]
+        
         lang1_id = params.lang2id[lang1]
         lang2_id = params.lang2id[lang2] if lang2 is not None else None
 
@@ -753,14 +767,17 @@ class Trainer(object):
         assert lambda_coeff >= 0
         if lambda_coeff == 0:
             return
+        
+        #########
         params = self.params
+        #params = self.params.meta_params[data_key]
+        
         name = 'model' if params.encoder_only else 'encoder'
         model = getattr(self, name)
         model.train()
         
         if not params.meta_learning :
             
-            print("lang1, lang2", lang1, lang2)
             # generate batch / select words to predict
             x, lengths, positions, langs, _ = self.generate_batch(lang1, lang2, 'pred')
             x, lengths, positions, langs, _ = self.round_batch(x, lengths, positions, langs)
@@ -795,7 +812,7 @@ class Trainer(object):
                 # generate batch / select words to predict
                 x, lengths, positions, langs, _ = self.generate_batch(lang1, lang2, 'pred', data_key)
                 x, lengths, positions, langs, _ = self.round_batch(x, lengths, positions, langs)
-                x, y, pred_mask = self.mask_out(x, lengths)
+                x, y, pred_mask = self.mask_out(x, lengths, data_key = data_key)
 
                 # cuda
                 x, y, pred_mask, lengths, positions, langs = to_cuda(x, y, pred_mask, lengths, positions, langs)

@@ -103,29 +103,32 @@ class Evaluator(object):
         """
         Create a new iterator for a dataset.
         """
+        
+        # todo : commenter
+        params = self.params
+        data = self.data
+        if data_key :
+            params = self.params.meta_params[data_key]
+            data = data[data_key]
+        
         assert data_set in ['valid', 'test']
-        assert lang1 in self.params.langs
-        assert lang2 is None or lang2 in self.params.langs
+        assert lang1 in params.langs
+        assert lang2 is None or lang2 in params.langs
         assert stream is False or lang2 is None
 
         # hacks to reduce evaluation time when using many languages
-        if len(self.params.langs) > 30:
+        if len(params.langs) > 30:
             eval_lgs = set(["ar", "bg", "de", "el", "en", "es", "fr", "hi", "ru", "sw", "th", "tr", "ur", "vi", "zh", "ab", "ay", "bug", "ha", "ko", "ln", "min", "nds", "pap", "pt", "tg", "to", "udm", "uk", "zh_classical"])
             eval_lgs = set(["ar", "bg", "de", "el", "en", "es", "fr", "hi", "ru", "sw", "th", "tr", "ur", "vi", "zh"])
             subsample = 10 if (data_set == 'test' or lang1 not in eval_lgs) else 5
             n_sentences = 600 if (data_set == 'test' or lang1 not in eval_lgs) else 1500
-        elif len(self.params.langs) > 5:
+        elif len(params.langs) > 5:
             subsample = 10 if data_set == 'test' else 5
             n_sentences = 300 if data_set == 'test' else 1500
         else:
             # n_sentences = -1 if data_set == 'valid' else 100
             n_sentences = -1
             subsample = 1
-        
-        # todo : commenter
-        data = self.data
-        if data_key :
-            data = data[data_key]
             
         if lang2 is None:
             if stream:
@@ -238,12 +241,17 @@ class Evaluator(object):
                 except :
                     pass
             
-    def mask_out(self, x, lengths, rng):
+    def mask_out(self, x, lengths, rng, data_key = None):
         """
         Decide of random words to mask out.
         We specify the random generator to ensure that the test is the same at each epoch.
         """
         params = self.params
+        if data_key :
+            params = self.params.meta_params[data_key]
+            # todo
+            params.pred_probs = self.params.pred_probs
+            
         slen, bs = x.size()
 
         # words to predict - be sure there is at least one word per sentence
@@ -272,36 +280,72 @@ class Evaluator(object):
         """
         Run all evaluations.
         """
+        
         params = self.params
         scores = OrderedDict({'epoch': trainer.epoch})
 
         with torch.no_grad():
 
             for data_set in ['valid', 'test']:
+                
+                if not params.meta_learning :
 
-                # causal prediction task (evaluate perplexity and accuracy)
-                for lang1, lang2 in params.clm_steps:
-                    self.evaluate_clm(scores, data_set, lang1, lang2)
+                    # causal prediction task (evaluate perplexity and accuracy)
+                    for lang1, lang2 in params.clm_steps:
+                        self.evaluate_clm(scores, data_set, lang1, lang2)
 
-                # prediction task (evaluate perplexity and accuracy)
-                for lang1, lang2 in params.mlm_steps:
-                    self.evaluate_mlm(scores, data_set, lang1, lang2, data_key = "es-it")
+                    # prediction task (evaluate perplexity and accuracy)
+                    for lang1, lang2 in params.mlm_steps:
+                        self.evaluate_mlm(scores, data_set, lang1, lang2, data_key)
 
-                # machine translation task (evaluate perplexity and accuracy)
-                for lang1, lang2 in set(params.mt_steps + [(l2, l3) for _, l2, l3 in params.bt_steps]):
-                    eval_bleu = params.eval_bleu and params.is_master
-                    self.evaluate_mt(scores, data_set, lang1, lang2, eval_bleu)
+                    # machine translation task (evaluate perplexity and accuracy)
+                    for lang1, lang2 in set(params.mt_steps + [(l2, l3) for _, l2, l3 in params.bt_steps]):
+                        eval_bleu = params.eval_bleu and params.is_master
+                        self.evaluate_mt(scores, data_set, lang1, lang2, eval_bleu)
 
-                # report average metrics per language
-                _clm_mono = [l1 for (l1, l2) in params.clm_steps if l2 is None]
-                if len(_clm_mono) > 0:
-                    scores['%s_clm_ppl' % data_set] = np.mean([scores['%s_%s_clm_ppl' % (data_set, lang)] for lang in _clm_mono])
-                    scores['%s_clm_acc' % data_set] = np.mean([scores['%s_%s_clm_acc' % (data_set, lang)] for lang in _clm_mono])
-                _mlm_mono = [l1 for (l1, l2) in params.mlm_steps if l2 is None]
-                if len(_mlm_mono) > 0:
-                    scores['%s_mlm_ppl' % data_set] = np.mean([scores['%s_%s_mlm_ppl' % (data_set, lang)] for lang in _mlm_mono])
-                    scores['%s_mlm_acc' % data_set] = np.mean([scores['%s_%s_mlm_acc' % (data_set, lang)] for lang in _mlm_mono])
+                    # report average metrics per language
+                    _clm_mono = [l1 for (l1, l2) in params.clm_steps if l2 is None]
+                    if len(_clm_mono) > 0:
+                        scores['%s_clm_ppl' % data_set] = np.mean([scores['%s_%s_clm_ppl' % (data_set, lang)] for lang in _clm_mono])
+                        scores['%s_clm_acc' % data_set] = np.mean([scores['%s_%s_clm_acc' % (data_set, lang)] for lang in _clm_mono])
+                    _mlm_mono = [l1 for (l1, l2) in params.mlm_steps if l2 is None]
+                    if len(_mlm_mono) > 0:
+                        scores['%s_mlm_ppl' % data_set] = np.mean([scores['%s_%s_mlm_ppl' % (data_set, lang)] for lang in _mlm_mono])
+                        scores['%s_mlm_acc' % data_set] = np.mean([scores['%s_%s_mlm_acc' % (data_set, lang)] for lang in _mlm_mono])
 
+                else :
+                    for lgs, params in self.params.meta_params.items() :
+                        
+                        # todo : good data_key ?
+                        data_key=lgs
+                        
+                        """
+                        # causal prediction task (evaluate perplexity and accuracy)
+                        for lang1, lang2 in params.clm_steps:
+                            self.evaluate_clm(scores, data_set, lang1, lang2)
+                        """
+                        
+                        # prediction task (evaluate perplexity and accuracy)
+                        for lang1, lang2 in params.mlm_steps:
+                            self.evaluate_mlm(scores, data_set, lang1, lang2, data_key = data_key)
+                        
+                        """
+                        # machine translation task (evaluate perplexity and accuracy)
+                        for lang1, lang2 in set(params.mt_steps + [(l2, l3) for _, l2, l3 in params.bt_steps]):
+                            eval_bleu = params.eval_bleu and params.is_master
+                            self.evaluate_mt(scores, data_set, lang1, lang2, eval_bleu)
+                        """
+                        # report average metrics per language
+                        _clm_mono = [l1 for (l1, l2) in params.clm_steps if l2 is None]
+                        if len(_clm_mono) > 0:
+                            scores['%s_clm_ppl' % data_set] = np.mean([scores['%s_%s_clm_ppl' % (data_set, lang)] for lang in _clm_mono])
+                            scores['%s_clm_acc' % data_set] = np.mean([scores['%s_%s_clm_acc' % (data_set, lang)] for lang in _clm_mono])
+                        _mlm_mono = [l1 for (l1, l2) in params.mlm_steps if l2 is None]
+                        if len(_mlm_mono) > 0:
+                            scores['%s_mlm_ppl' % data_set] = np.mean([scores['%s_%s_mlm_ppl' % (data_set, lang)] for lang in _mlm_mono])
+                            scores['%s_mlm_acc' % data_set] = np.mean([scores['%s_%s_mlm_acc' % (data_set, lang)] for lang in _mlm_mono])
+                        
+                    
         return scores
 
     def evaluate_clm(self, scores, data_set, lang1, lang2, data_key = None):
@@ -382,6 +426,10 @@ class Evaluator(object):
         Evaluate perplexity and next word prediction accuracy.
         """
         params = self.params
+        if data_key :
+            params = self.params.meta_params[data_key]
+            params.multi_gpu = self.params.multi_gpu
+            
         assert data_set in ['valid', 'test']
         assert lang1 in params.langs
         assert lang2 in params.langs or lang2 is None
@@ -406,6 +454,8 @@ class Evaluator(object):
         if eval_memory:
             all_mem_att = {k: [] for k, _ in self.memory_list}
 
+        i = 0
+        
         for batch in self.get_iterator(data_set, lang1, lang2, stream=(lang2 is None), data_key = data_key):
 
             # batch
@@ -418,7 +468,7 @@ class Evaluator(object):
                 x, lengths, positions, langs = concat_batches(sent1, len1, lang1_id, sent2, len2, lang2_id, params.pad_index, params.eos_index, reset_positions=True)
 
             # words to predict
-            x, y, pred_mask = self.mask_out(x, lengths, rng)
+            x, y, pred_mask = self.mask_out(x, lengths, rng, data_key = data_key)
 
             # cuda
             x, y, pred_mask, lengths, positions, langs = to_cuda(x, y, pred_mask, lengths, positions, langs)
@@ -435,6 +485,9 @@ class Evaluator(object):
                 for k, v in self.memory_list:
                     all_mem_att[k].append((v.last_indices, v.last_scores))
 
+            i = i + 1
+            if i == 10 :
+                break
         # compute perplexity and prediction accuracy
         ppl_name = '%s_%s_mlm_ppl' % (data_set, l1l2)
         acc_name = '%s_%s_mlm_acc' % (data_set, l1l2)

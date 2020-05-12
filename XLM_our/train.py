@@ -9,6 +9,8 @@ import json
 import random
 import argparse
 
+import copy
+
 from src.slurm import init_signal_handler, init_distributed_mode
 from src.data.loader import check_data_params, load_data
 from src.utils import bool_flag, initialize_exp, set_sampling_probs, shuf_order
@@ -236,12 +238,18 @@ def main(params):
 
     # load data
     data = load_data(params)
+    
+    # todo : params.n_words
+    p = params.meta_params[list(params.meta_params.keys())[0]]
 
     # build model
     if params.encoder_only:
-        model = build_model(params, data['dico'])
+        model = build_model(params = p, dico = data['dico'])
     else:
-        encoder, decoder = build_model(params, data['dico'])
+        encoder, decoder = build_model(params = p, dico = data['dico'])
+    
+    # todo : p.pad_index
+    params.pad_index = p.pad_index
 
     # build trainer, reload potential checkpoints / build evaluator
     if params.encoder_only:
@@ -303,16 +311,19 @@ def main(params):
                 
                 for lgs in params.lgs :
                     
-                    # todo : good data_key
-                    data_key="es-it"
+                    # todo : good data_key?
+                    data_key=lgs
+                    
+                    print("params.meta_params.keys()", params.meta_params.keys())
                     
                     # CLM steps
+                    """
                     lang1_list, lang2_list = [], []
                     for lang1, lang2 in shuf_order(params.meta_params[lgs].clm_steps, params):
                         lang1_list.append(lang1)
                         lang2_list.append(lang2)
                     trainer.clm_step(lang1_list, lang2_list, params.lambda_clm, data_key = data_key)
-                    
+                    """
                     # MLM steps (also includes TLM if lang2 is not None)
                     lang1_list, lang2_list = [], []
                     for lang1, lang2 in shuf_order(params.meta_params[lgs].mlm_steps, params):
@@ -320,7 +331,7 @@ def main(params):
                         lang2_list.append(lang2)
                     trainer.mlm_step(lang1_list, lang2_list, params.lambda_mlm, data_key = data_key)
                     
-
+                    """
                     # parallel classification steps
                     lang1_list, lang2_list = [], []
                     for lang1, lang2 in shuf_order(params.meta_params[lgs].pc_steps, params):
@@ -350,14 +361,15 @@ def main(params):
                         lang2_list.append(lang2)
                         lang3_list.append(lang3)
                     trainer.bt_step(lang1_list, lang2_list, lang3_list, params.lambda_bt, data_key = data_key)    
-                
+                    """
+                    
                 trainer.iter()        
 
         logger.info("============ End of epoch %i ============" % trainer.epoch)
 
         # evaluate perplexity
         scores = evaluator.run_all_evals(trainer)
-
+       
         # print / JSON log
         for k, v in scores.items():
             logger.info("%s -> %.6f" % (k, v))
@@ -411,6 +423,8 @@ if __name__ == '__main__':
     
     params.meta_params = {}
     
+    langs, clms, mlms, pcs, mts, aes, bts = [], [], [], [], [], [], []
+    
     if len(meta_lgs) != 1 :
         params.meta_learning = True
     #for lgs, clm, mlm, pc, mt, ae, bt in zip(meta_lgs, meta_clm, meta_mlm, meta_pc, meta_mt, meta_ae, meta_bt) :
@@ -434,11 +448,30 @@ if __name__ == '__main__':
         #params.bt_steps = bt if bt != "-" else ""
         params.bt_steps = ""
         
+        #print("1", params.langs)
+        
         check_data_params(params)
+        
+        langs.append(params.langs)
+        clms.append(params.clm_steps)
+        mlms.append(params.mlm_steps)
+        pcs.append(params.pc_steps)
+        mts.append(params.mt_steps)
+        aes.append(params.ae_steps)
+        bts.append(params.bt_steps)
+        
         check_model_params(params)
         
-        params.meta_params[lgs] = params
-            
+        params.meta_params[lgs] = copy.deepcopy(params)
+    
+    #params.meta_learning = True 
+    params.langs = langs
+    params.clms = clms
+    params.mlms = mlms
+    params.pcs = pcs
+    params.mts = mts
+    params.aes = aes
+    params.bts = bts
             
     #else :
     #check_data_params(params)

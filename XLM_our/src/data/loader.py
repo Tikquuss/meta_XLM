@@ -377,13 +377,14 @@ def load_data(params):
     """
     data = {}
     for lgs, valeur in params.meta_params.items():
+        
         data[lgs] = {}
-
+        print("valeur.langs", valeur.langs)
         # monolingual datasets
-        load_mono_data(params, data[lgs])
+        load_mono_data(params = valeur, data = data[lgs])
 
         # parallel datasets
-        load_para_data(params, data[lgs])
+        load_para_data(params = valeur, data = data[lgs])
 
         # monolingual data summary
         logger.info('============ Data summary')
