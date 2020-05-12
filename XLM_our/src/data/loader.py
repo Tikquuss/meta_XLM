@@ -377,13 +377,16 @@ def load_data(params):
     """
     data = {}
     for lgs, valeur in params.meta_params.items():
+    
+        logger.info(" langs: %s" % ", ".join(valeur.langs))
         
         data[lgs] = {}
-        print("valeur.langs", valeur.langs)
+    
         # monolingual datasets
         load_mono_data(params = valeur, data = data[lgs])
 
         # parallel datasets
+        valeur.n_gpu_per_node = params.n_gpu_per_node
         load_para_data(params = valeur, data = data[lgs])
 
         # monolingual data summary

@@ -197,9 +197,8 @@ class Evaluator(object):
                     restore_segmentation(lang2_path)
         else :
             # our 
-            #for k, data in self.data.items():
-            #    print(k, data, "\n")
-
+            
+            #for lgs in params.meta_params.keys()
             for data in self.data.values():
                 try :
                     for (lang1, lang2), v in data['para'].items():
@@ -296,7 +295,7 @@ class Evaluator(object):
 
                     # prediction task (evaluate perplexity and accuracy)
                     for lang1, lang2 in params.mlm_steps:
-                        self.evaluate_mlm(scores, data_set, lang1, lang2, data_key)
+                        self.evaluate_mlm(scores, data_set, lang1, lang2)
 
                     # machine translation task (evaluate perplexity and accuracy)
                     for lang1, lang2 in set(params.mt_steps + [(l2, l3) for _, l2, l3 in params.bt_steps]):

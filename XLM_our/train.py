@@ -231,7 +231,11 @@ def main(params):
     init_distributed_mode(params)
     
     # initialize the experiment
+    meta_params = copy.deepcopy(params).meta_params
+    if params.meta_learning :
+        params.meta_params = "..."
     logger = initialize_exp(params)
+    params.meta_params = meta_params
 
     # initialize SLURM signal handler for time limit / pre-emption
     init_signal_handler()
@@ -239,7 +243,11 @@ def main(params):
     # load data
     data = load_data(params)
     
-    # todo : params.n_words
+    # todo : good params.n_words (I'll take the one from the first task for the moment.)
+    """
+    But I think that if all the task data are based on the same vocabulary, all these parameters will be the same, 
+    and therefore no problem if we choose one at random.
+    """
     p = params.meta_params[list(params.meta_params.keys())[0]]
 
     # build model
@@ -248,8 +256,13 @@ def main(params):
     else:
         encoder, decoder = build_model(params = p, dico = data['dico'])
     
-    # todo : p.pad_index
+    # todo : good pad_index and eos_index and ... (I'll take the one from the first task for the moment.)
+    """
+    But I think that if all the task data are based on the same vocabulary, all these parameters will be the same, 
+    and therefore no problem if we choose one at random.
+    """
     params.pad_index = p.pad_index
+    params.eos_index = p.eos_index
 
     # build trainer, reload potential checkpoints / build evaluator
     if params.encoder_only:
@@ -277,14 +290,19 @@ def main(params):
 
         trainer.n_sentences = 0
 
-        while trainer.n_sentences < trainer.epoch_size:
+        #while trainer.n_sentences < trainer.epoch_size:
+        # our
+        # todo : corriger
+        while trainer.n_sentences < trainer.epoch_size * params.n_task:
             
             if not params.meta_learning :
-                print(params.clm_steps, params.mlm_steps)
                 # CLM steps
                 for lang1, lang2 in shuf_order(params.clm_steps, params):
                     trainer.clm_step(lang1, lang2, params.lambda_clm)
 
+                print("shuf_order(params.mlm_steps, params)", shuf_order(params.mlm_steps, params))
+                print("params.mlm_steps", params.mlm_steps)
+                
                 # MLM steps (also includes TLM if lang2 is not None)
                 for lang1, lang2 in shuf_order(params.mlm_steps, params):
                     trainer.mlm_step(lang1, lang2, params.lambda_mlm)
@@ -307,61 +325,65 @@ def main(params):
 
                 trainer.iter()
             else :
-                # our
                 
-                for lgs in params.lgs :
-                    
-                    # todo : good data_key?
-                    data_key=lgs
-                    
-                    print("params.meta_params.keys()", params.meta_params.keys())
-                    
-                    # CLM steps
-                    """
-                    lang1_list, lang2_list = [], []
+                """
+                Here we build language lists for each of our meta-taks. Indeed, for two language lists l1 and l2, 
+                the objective will be done with l1[i] and l2[i] respectively, this for each index i of the two lists. 
+                """
+                lang1_dic, lang2_dic, lang3_dic = {}, {}, {}
+                 
+                for lgs in params.meta_params.keys() :
+                       
+                    # CLM
+                    lang1_dic['clm_step'], lang2_dic['clm_step'] = [], []
                     for lang1, lang2 in shuf_order(params.meta_params[lgs].clm_steps, params):
-                        lang1_list.append(lang1)
-                        lang2_list.append(lang2)
-                    trainer.clm_step(lang1_list, lang2_list, params.lambda_clm, data_key = data_key)
-                    """
-                    # MLM steps (also includes TLM if lang2 is not None)
-                    lang1_list, lang2_list = [], []
-                    for lang1, lang2 in shuf_order(params.meta_params[lgs].mlm_steps, params):
-                        lang1_list.append(lang1)
-                        lang2_list.append(lang2)
-                    trainer.mlm_step(lang1_list, lang2_list, params.lambda_mlm, data_key = data_key)
+                        lang1_dic['clm_step'].append(lang1)
+                        lang2_dic['clm_step'].append(lang2)
                     
-                    """
-                    # parallel classification steps
-                    lang1_list, lang2_list = [], []
+                    # MLM  
+                    lang1_dic['mlm_step'], lang2_dic['mlm_step'] = [], []
+                    #for lang1, lang2 in shuf_order(params.meta_params[lgs].mlm_steps, params):
+                    print(params.meta_params[lgs].mlm_steps)
+                    for lang1, lang2 in params.meta_params[lgs].mlm_steps :
+                        lang1_dic['mlm_step'].append(lang1)
+                        lang2_dic['mlm_step'].append(lang2)
+                   
+                    # parallel classification 
+                    lang1_dic['pc_step'], lang2_dic['pc_step'] = [], []
                     for lang1, lang2 in shuf_order(params.meta_params[lgs].pc_steps, params):
-                        lang1_list.append(lang1)
-                        lang2_list.append(lang2)
-                    trainer.pc_step(lang1_list, lang2_list, params.lambda_pc, data_key = data_key)
-                    
-                    # denoising auto-encoder steps
-                    lang1_list = []
-                    for lang1 in shuf_order(params.meta_params[lgs].ae_steps, params):
-                        lang1_list.append(lang1)
-                    trainer.mt_step(lang1_list, lang1_list, params.lambda_ae, data_key = data_key)
+                        lang1_dic['pc_step'].append(lang1)
+                        lang2_dic['pc_step'].append(lang2)
                         
-
-                    # machine translation steps
-                    lang1_list, lang2_list = [], []
+                    # denoising auto-encoder
+                    lang1_dic['ae_step'] = []
+                    for lang1 in shuf_order(params.meta_params[lgs].ae_steps, params):
+                        lang1_dic['ae_step'].append(lang1)
+                     
+                    # machine translation 
+                    lang1_dic['mt_step'], lang2_dic['mt_step'] = [], []
                     for lang1, lang2 in shuf_order(params.meta_params[lgs].mt_steps, params):
-                        lang1_list.append(lang1)
-                        lang2_list.append(lang2)
-                    trainer.mt_step(lang1_list, lang2_list, params.lambda_mt, data_key = data_key)
-                    
-
-                    # back-translation steps
-                    lang1_list, lang2_list, lang3_list = [], [], []
+                        lang1_dic['mt_step'].append(lang1)
+                        lang2_dic['mt_step'].append(lang2)
+                       
+                    # back-translation
+                    lang1_dic['bt_step'], lang2_dic['bt_step'], lang3_dic['bt_step'] = [], [], []
                     for lang1, lang2, lang3 in shuf_order(params.meta_params[lgs].bt_steps, params):
-                        lang1_list.append(lang1)
-                        lang2_list.append(lang2)
-                        lang3_list.append(lang3)
-                    trainer.bt_step(lang1_list, lang2_list, lang3_list, params.lambda_bt, data_key = data_key)    
-                    """
+                        lang1_dic['bt_step'].append(lang1)
+                        lang2_dic['bt_step'].append(lang2)
+                        lang3_dic['bt_step'].append(lang3)
+                        
+                # CLM steps
+                #trainer.clm_step(lang1_dic['clm_step'] , lang2_dic['clm_step'], params.lambda_clm)
+                # MLM steps (also includes TLM if lang2 is not None) 
+                trainer.mlm_step(lang1_dic['mlm_step'] , lang2_dic['mlm_step'], params.lambda_mlm)
+                # parallel classification steps
+                #trainer.pc_step(lang1_dic['pc_step'] , lang2_dic['pc_step'], params.lambda_pc)
+                # denoising auto-encoder steps
+                #trainer.mt_step(lang1_dic['ae_step'] , lang1_dic['ae_step'], params.lambda_ae)
+                # machine translation steps    
+                #trainer.mt_step(lang1_dic['mt_step'] , lang1_dic['mt_step'], params.lambda_mt)
+                # back-translation steps
+                #trainer.bt_step(lang1_dic['bt_step'] , lang1_dic['bt_step'], lang1_dic['bt_step'], params.lambda_bt)    
                     
                 trainer.iter()        
 
@@ -388,8 +410,6 @@ if __name__ == '__main__':
     parser = get_parser()
     params = parser.parse_args()
     
-    print("1", params.mlm_steps)
-
     # debug mode
     if params.debug:
         params.exp_name = 'debug'
@@ -408,7 +428,6 @@ if __name__ == '__main__':
     params.remove_long_sentences['valid'] = params.remove_long_sentences_valid
     params.remove_long_sentences['test'] = params.remove_long_sentences_test
 
-    # check parameters
     
     # Check to see if we need to do metalearning.
     params.meta_learning = False
@@ -422,11 +441,14 @@ if __name__ == '__main__':
     meta_bt = params.bt_steps.split("|")
     
     params.meta_params = {}
+    params.n_task = len(meta_lgs)
     
     langs, clms, mlms, pcs, mts, aes, bts = [], [], [], [], [], [], []
     
-    if len(meta_lgs) != 1 :
+    if params.n_task != 1 :
         params.meta_learning = True
+        
+    # check parameters
     #for lgs, clm, mlm, pc, mt, ae, bt in zip(meta_lgs, meta_clm, meta_mlm, meta_pc, meta_mt, meta_ae, meta_bt) :
     for lgs, mlm in zip(meta_lgs, meta_mlm) :
         params.lgs = lgs if lgs != "-" else ""
@@ -464,21 +486,27 @@ if __name__ == '__main__':
         
         params.meta_params[lgs] = copy.deepcopy(params)
     
-    #params.meta_learning = True 
-    params.langs = langs
-    params.clms = clms
-    params.mlms = mlms
-    params.pcs = pcs
-    params.mts = mts
-    params.aes = aes
-    params.bts = bts
-            
     #else :
     #check_data_params(params)
     #check_model_params(params)
+    
+    if params.meta_learning :
+        params.langs = langs
+        params.clm_steps = clms
+        params.mlm_steps = mlms
+        params.pc_steps = pcs
+        params.mt_steps = mts
+        params.ae_steps = aes
+        params.bt_steps = bts
+        
+    #if not params.meta_learning :
+        # necessaire lors du mask_out
+        #k = list(params.meta_params.keys())[0]
+        #params.n_words = params.meta_params[k].n_words
+        #params.mask_index = params.meta_params[k].mask_index
         
     #if params.meta_learning :
     params.lgs = meta_lgs
-            
+     
     # run experiment
     main(params)

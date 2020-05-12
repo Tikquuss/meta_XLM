@@ -26,6 +26,17 @@ from .model.transformer import TransformerFFN
 
 logger = getLogger()
 
+# our
+def get_data_key(params, langs=[]):
+    """
+    In the case of meta-learning, we have a (meta-)data dictionary for each (meta-)task, 
+    so the keys are the languages conserved by the task. 
+    This method allows to return the corresponding meta-dataset for a given meta-pair of language.
+    """
+    for lgs in params.lgs :
+        for lang in langs :
+            if lang in lgs.split("-"):
+                return lgs
 
 class Trainer(object):
 
@@ -126,11 +137,23 @@ class Trainer(object):
             )
         else :
             # todo : gérer l'affichage des stat pour le meta_learning
-            self.stats = OrderedDict(
-                [('processed_s', 0), ('processed_w', 0)]
-            )
-            pass
-        
+            self.stats = {}
+             
+            for lgs in params.meta_params.keys() :
+                  self.stats[lgs] = OrderedDict(
+                        [('processed_s', 0), ('processed_w', 0)] +
+                        [('CLM-%s' % l, []) for l in params.meta_params[lgs].langs] +
+                        [('CLM-%s-%s' % (l1, l2), []) for l1, l2 in data[lgs]['para'].keys()] +
+                        [('CLM-%s-%s' % (l2, l1), []) for l1, l2 in data[lgs]['para'].keys()] +
+                        [('MLM-%s' % l, []) for l in params.meta_params[lgs].langs] +
+                        [('MLM-%s-%s' % (l1, l2), []) for l1, l2 in data[lgs]['para'].keys()] +
+                        [('MLM-%s-%s' % (l2, l1), []) for l1, l2 in data[lgs]['para'].keys()] +
+                        [('PC-%s-%s' % (l1, l2), []) for l1, l2 in params.meta_params[lgs].pc_steps] +
+                        [('AE-%s' % lang, []) for lang in params.meta_params[lgs].ae_steps] +
+                        [('MT-%s-%s' % (l1, l2), []) for l1, l2 in params.meta_params[lgs].mt_steps] +
+                        [('BT-%s-%s-%s' % (l1, l2, l3), []) for l1, l2, l3 in params.meta_params[lgs].bt_steps]
+                    )
+    
         self.last_time = time.time()
 
         # reload potential checkpoints
@@ -218,6 +241,7 @@ class Trainer(object):
         if params.amp == -1:
             for optimizer in optimizers:
                 optimizer.zero_grad()
+            # our : retain_graph = retain_graph
             loss.backward(retain_graph=retain_graph)
             if params.clip_grad_norm > 0:
                 for name in names:
@@ -232,7 +256,7 @@ class Trainer(object):
         else:
             if self.n_iter % params.accumulate_gradients == 0:
                 with apex.amp.scale_loss(loss, optimizers) as scaled_loss:
-                    ##############
+                    # our : retain_graph = retain_graph
                     scaled_loss.backward(retain_graph=retain_graph)
                 if params.clip_grad_norm > 0:
                     for name in names:
@@ -245,13 +269,14 @@ class Trainer(object):
                     optimizer.zero_grad()
             else:
                 with apex.amp.scale_loss(loss, optimizers, delay_unscale=True) as scaled_loss:
-                    #########
+                    # our : retain_graph = retain_graph
                     scaled_loss.backward(retain_graph=retain_graph)
 
     def iter(self):
         """
         End of iteration.
         """
+        # todo : personnilisé
         self.n_iter += 1
         self.n_total_iter += 1
         update_lambdas(self.params, self.n_total_iter)
@@ -264,39 +289,77 @@ class Trainer(object):
         if self.n_total_iter % 5 != 0:
             return
 
-        s_iter = "%7i - " % self.n_total_iter
-        s_stat = ' || '.join([
-            '{}: {:7.4f}'.format(k, np.mean(v)) for k, v in self.stats.items()
-            if type(v) is list and len(v) > 0
-        ])
-        for k in self.stats.keys():
-            if type(self.stats[k]) is list:
-                del self.stats[k][:]
+        if not self.params.meta_learning :
+            s_iter = "%7i - " % self.n_total_iter
+            s_stat = ' || '.join([
+                '{}: {:7.4f}'.format(k, np.mean(v)) for k, v in self.stats.items()
+                if type(v) is list and len(v) > 0
+            ])
+            for k in self.stats.keys():
+                if type(self.stats[k]) is list:
+                    del self.stats[k][:]
 
-        # learning rates
-        s_lr = " - "
-        for k, v in self.optimizers.items():
-            s_lr = s_lr + (" - %s LR: " % k) + " / ".join("{:.4e}".format(group['lr']) for group in v.param_groups)
+            # learning rates
+            s_lr = " - "
+            for k, v in self.optimizers.items():
+                s_lr = s_lr + (" - %s LR: " % k) + " / ".join("{:.4e}".format(group['lr']) for group in v.param_groups)
 
-        # processing speed
-        new_time = time.time()
-        diff = new_time - self.last_time
-        s_speed = "{:7.2f} sent/s - {:8.2f} words/s - ".format(
-            self.stats['processed_s'] * 1.0 / diff,
-            self.stats['processed_w'] * 1.0 / diff
-        )
-        self.stats['processed_s'] = 0
-        self.last_time = new_time
+            # processing speed
+            new_time = time.time()
+            diff = new_time - self.last_time
+            s_speed = "{:7.2f} sent/s - {:8.2f} words/s - ".format(
+                self.stats['processed_s'] * 1.0 / diff,
+                self.stats['processed_w'] * 1.0 / diff
+            )
+            self.stats['processed_s'] = 0
+            self.last_time = new_time
 
-        # log speed + stats + learning rate
-        logger.info(s_iter + s_speed + s_stat + s_lr)
+            # log speed + stats + learning rate
+            logger.info(s_iter + s_speed + s_stat + s_lr)
+        
+        else :
+            # our
+            for lgs in self.params.meta_params.keys() :
+                task = "task : " + lgs + " ||"
+                # todo : ?
+                s_iter = "%7i - " % self.n_total_iter
+                
+                stats = self.stats[lgs]
+                
+                s_stat = ' || '.join([
+                    '{}: {:7.4f}'.format(k, np.mean(v)) for k, v in stats.items()
+                    if type(v) is list and len(v) > 0
+                ])
+                
+                for k in stats.keys():
+                    if type(stats[k]) is list:
+                        del stats[k][:]
+
+                # learning rates
+                s_lr = " - "
+                for k, v in self.optimizers.items():
+                    s_lr = s_lr + (" - %s LR: " % k) + " / ".join("{:.4e}".format(group['lr']) for group in v.param_groups)
+
+                # processing speed
+                new_time = time.time()
+                diff = new_time - self.last_time
+                s_speed = "{:7.2f} sent/s - {:8.2f} words/s - ".format(
+                    stats['processed_s'] * 1.0 / diff,
+                    stats['processed_w'] * 1.0 / diff
+                )
+                stats['processed_s'] = 0
+                self.last_time = new_time
+
+                # log speed + stats + learning rate
+                logger.info(task + s_iter + s_speed + s_stat + s_lr)
+                
 
     def get_iterator(self, iter_name, lang1, lang2, stream, data_key=None):
         """
         Create a new iterator for a dataset.
         """
         
-        # todo : commenter
+        # our
         data = self.data
         if data_key :
             data = data[data_key]
@@ -328,6 +391,7 @@ class Trainer(object):
         """
         Return a batch of sentences from a dataset.
         """
+        # our
         params = self.params
         if data_key :
             params = self.params.meta_params[data_key]
@@ -443,11 +507,22 @@ class Trainer(object):
         """
         Decide of random words to mask out, and what target they get assigned.
         """
+        
+        # our
         params = self.params
         if data_key :
             params = self.params.meta_params[data_key]
             # todo
             params.pred_probs = self.params.pred_probs
+        else :
+            # todo : correct it
+            """
+            But I think that if all the task data are based on the same vocabulary, all these parameters will be the same, 
+            and therefore no problem if we choose one at random.
+            """
+            k = list(self.params.meta_params.keys())[0]
+            params.n_words = self.params.meta_params[k].n_words
+            params.mask_index = self.params.meta_params[k].mask_index
             
         slen, bs = x.size()
 
@@ -496,7 +571,8 @@ class Trainer(object):
         """
         Prepare a batch (for causal or non-causal mode).
         """
-        #######
+    
+        # our
         params = self.params
         if data_key :
             params = self.params.meta_params[data_key]
@@ -724,11 +800,19 @@ class Trainer(object):
             self.stats['processed_s'] += lengths.size(0)
             self.stats['processed_w'] += pred_mask.sum().item()
         else :
-            lang1_list, lang2_list = lang1, lang2
+            
             total_loss = 0
-            for lang1, lang2 in zip(lang1_list, lang2_list) :
+            
+            # equivalent to : for task in list of task
+            for lang1, lang2 in zip(lang1, lang2) :
+                
+                data_key = get_data_key(params, langs=[lang1, lang2])
+                
+                assert data_key, "Invalid data_key : can't be None"
+                assert self.data[data_key], "Invalid data_key : " + str(data_key) 
+                
                 # generate batch / select words to predict
-                x, lengths, positions, langs, _ = self.generate_batch(lang1, lang2, 'causal')
+                x, lengths, positions, langs, _ = self.generate_batch(lang1, lang2, 'causal', data_key = data_key)
                 x, lengths, positions, langs, _ = self.round_batch(x, lengths, positions, langs)
                 alen = torch.arange(lengths.max(), dtype=torch.long, device=lengths.device)
                 pred_mask = alen[:, None] < lengths[None] - 1
@@ -743,23 +827,30 @@ class Trainer(object):
                 # forward / loss
                 tensor = model('fwd', x=x, lengths=lengths, langs=langs, causal=True)
                 _, task_loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=False)
-                self.stats[('CLM-%s' % lang1) if lang2 is None else ('CLM-%s-%s' % (lang1, lang2))].append(task_loss.item())
+                #self.stats[('CLM-%s' % lang1) if lang2 is None else ('CLM-%s-%s' % (lang1, lang2))].append(task_loss.item())
                 task_loss = lambda_coeff * task_loss
                 
                 total_loss = total_loss + task_loss
                 
                 # optimize
-                self.optimize(task_loss)
+                #self.optimize(loss)
+                
+                # our
+                """
+                RuntimeError: Trying to backward through the graph a second time, but the buffers have already been freed. 
+                Specify retain_graph=True when calling backward the first time.
+                """
+                self.optimize(loss, retain_graph=True)
 
                 # number of processed sentences / words
                 self.n_sentences += params.batch_size
-                self.stats['processed_s'] += lengths.size(0)
-                self.stats['processed_w'] += pred_mask.sum().item()
+                #self.stats['processed_s'] += lengths.size(0)
+                #self.stats['processed_w'] += pred_mask.sum().item()
                 
             self.optimize(total_loss)
             
 
-    def mlm_step(self, lang1, lang2, lambda_coeff, data_key=None):
+    def mlm_step(self, lang1, lang2, lambda_coeff):
         """
         Masked word prediction step.
         MLM objective is lang2 is None, TLM objective otherwise.
@@ -768,9 +859,7 @@ class Trainer(object):
         if lambda_coeff == 0:
             return
         
-        #########
         params = self.params
-        #params = self.params.meta_params[data_key]
         
         name = 'model' if params.encoder_only else 'encoder'
         model = getattr(self, name)
@@ -802,15 +891,19 @@ class Trainer(object):
             
         else :
             # our
-            assert self.data[data_key], "todo "
-        
-            lang1_list, lang2_list = lang1, lang2
+                
             total_loss = 0
             
-            for lang1, lang2 in zip(lang1_list, lang2_list) :
+            # equivalent to : for task in list of task
+            for lang1, lang2 in zip(lang1, lang2) :
+                
+                data_key = get_data_key(params, langs=[lang1, lang2])
+                
+                assert data_key, "Invalid data_key : can't be None"
+                assert self.data[data_key], "Invalid data_key : " + str(data_key) 
                 
                 # generate batch / select words to predict
-                x, lengths, positions, langs, _ = self.generate_batch(lang1, lang2, 'pred', data_key)
+                x, lengths, positions, langs, _ = self.generate_batch(lang1, lang2, 'pred', data_key = data_key)
                 x, lengths, positions, langs, _ = self.round_batch(x, lengths, positions, langs)
                 x, y, pred_mask = self.mask_out(x, lengths, data_key = data_key)
 
@@ -819,24 +912,26 @@ class Trainer(object):
 
                 # forward / loss
                 tensor = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)
-                _, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=False)
-                #self.stats[('MLM-%s' % lang1) if lang2 is None else ('MLM-%s-%s' % (lang1, lang2))].append(loss.item())
-                loss = lambda_coeff * loss
+                _, task_loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=False)
+                self.stats[data_key][('MLM-%s' % lang1) if lang2 is None else ('MLM-%s-%s' % (lang1, lang2))].append(task_loss.item())
+                task_loss = lambda_coeff * task_loss
                 
-                total_loss = total_loss + loss 
+                total_loss = total_loss + task_loss 
 
                 # optimize
                 #self.optimize(loss)
+                
+                # our
                 """
                 RuntimeError: Trying to backward through the graph a second time, but the buffers have already been freed. 
                 Specify retain_graph=True when calling backward the first time.
                 """
-                self.optimize(loss, retain_graph=True)
+                self.optimize(task_loss, retain_graph=True)
 
                 # number of processed sentences / words
                 self.n_sentences += params.batch_size
-                #self.stats['processed_s'] += lengths.size(0)
-                #self.stats['processed_w'] += pred_mask.sum().item()
+                self.stats[data_key]['processed_s'] += lengths.size(0)
+                self.stats[data_key]['processed_w'] += pred_mask.sum().item()
                 
             self.optimize(total_loss)
             
