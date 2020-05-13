@@ -44,4 +44,4 @@ Please cite [[1]](https://arxiv.org/abs/1901.07291) and [[2]](https://arxiv.org/
 
 ## License
 
-See the [LICENSE](LICENSE) file for more details.
+See the [LICENSE](blob/master/LICENCE) file for more details.
