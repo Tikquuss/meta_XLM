@@ -80,8 +80,6 @@ get_n_samples() {
     fi
 }
 
-N_SAMPLES=${2-'false'}
-
 # tokenize
 echo -e "\n"
 echo "*** Cleaning and tokenizing $pair data ... ***"

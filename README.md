@@ -59,11 +59,12 @@ MONO_PATH=...      # folder containing the monolingual data
 SAME_VOCAB=True    # whether all languages should share the same vocabulary (leave to True)
 nCodes=10000
 shuf_n_samples=1000000
+threads_for_tokenizer=16
 test_size=10       # Percentage of test data (%)
 val_size=10        # Percentage of valid data (%)
 
 # tools paths
-TOKENIZE=tools/tokenize.sh
+TOKENIZE=tools/tokenize_our.sh
 LOWER_REMOVE_ACCENT=tools/lowercase_and_remove_accent.py
 FASTBPE=tools/fastBPE/fast
 
@@ -86,16 +87,18 @@ sub_task_data=10,10,-1
 # transform (tokenize, lower and remove accent, loard code and vocab, apply BPE tokenization, binarize...) our data contained 
 # in the text files into a pth file understandable by the framework : takes a lot of time with dataset size, nCodes and shuf_n_samples
 
-./build_meta_data.sh en-fr,en-de,de-fr --n_samples $n_samples --sub_task_data $sub_task_data
+sub_task=en-fr:10,en-de:-1,de-fr:1
+
+./build_meta_data.sh $sub_task $n_samples 
 ```
 
-After this you will have the following files in `$OUTPATH`. :  
+After this you will have the following files in `$OUTPATH` :  
 
 ```
 TODO
 ```
 
-For fine-tune, in $OUTPATH/fine-tune
+For fine-tune, in `$OUTPATH/fine_tune` :
 
 ```
 TODO
