@@ -1,2 +1,0 @@
-#!/bin/bash
-python train.py --exp_name test_enfr_mlm --dump_path ./dumped/ --data_path ./data/processed/en-fr/ --lgs 'en-fr' --mlm_steps 'en,fr' --emb_dim 1024 --n_layers 6 --n_heads 8 --dropout 0.1 --attention_dropout 0.1 --gelu_activation true --batch_size 32 --bptt 256 --optimizer adam,lr=0.0001 --epoch_size 200000 --validation_metrics _valid_mlm_ppl --stopping_criterion _valid_mlm_ppl,10  
