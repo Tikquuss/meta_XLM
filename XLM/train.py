@@ -216,7 +216,7 @@ def get_parser():
     parser.add_argument("--master_port", type=int, default=-1,
                         help="Master port (for multi-node SLURM jobs)")
 
-    # Add by us
+    # our
     parser.add_argument("--train_n_samples", type=int, default=0, help="Just consider train_n_sample train data")
     parser.add_argument("--valid_n_samples", type=int, default=0, help="Just consider valid_n_sample validation data")
     parser.add_argument("--test_n_samples", type=int, default=0, help="Just consider test_n_sample test data for")
