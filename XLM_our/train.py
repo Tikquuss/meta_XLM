@@ -9,7 +9,9 @@ import json
 import random
 import argparse
 
+# our
 import copy
+import gc
 
 from src.slurm import init_signal_handler, init_distributed_mode
 from src.data.loader import check_data_params, load_data
@@ -219,8 +221,8 @@ def get_parser():
     parser.add_argument("--valid_n_samples", type=int, default=0, help="Just consider valid_n_sample validation data")
     parser.add_argument("--test_n_samples", type=int, default=0, help="Just consider test_n_sample test data for")
     parser.add_argument("--remove_long_sentences_train", type=bool_flag, default=True, help="remove long sentences in train dataset")
-    parser.add_argument("--remove_long_sentences_valid", type=bool_flag, default=True, help="remove long sentences in valid dataset")
-    parser.add_argument("--remove_long_sentences_test", type=bool_flag, default=True, help="remove long sentences in test dataset")
+    parser.add_argument("--remove_long_sentences_valid", type=bool_flag, default=False, help="remove long sentences in valid dataset")
+    parser.add_argument("--remove_long_sentences_test", type=bool_flag, default=False, help="remove long sentences in test dataset")
 
     return parser
 
@@ -288,20 +290,12 @@ def main(params):
 
         logger.info("============ Starting epoch %i ... ============" % trainer.epoch)
 
-        trainer.n_sentences = 0
-
-        #while trainer.n_sentences < trainer.epoch_size:
-        # our
-        # todo : corriger
-        while trainer.n_sentences < trainer.epoch_size * params.n_task:
-            
-            if not params.meta_learning :
+        if not params.meta_learning :
+            trainer.n_sentences = 0
+            while trainer.n_sentences < trainer.epoch_size :
                 # CLM steps
                 for lang1, lang2 in shuf_order(params.clm_steps, params):
                     trainer.clm_step(lang1, lang2, params.lambda_clm)
-
-                print("shuf_order(params.mlm_steps, params)", shuf_order(params.mlm_steps, params))
-                print("params.mlm_steps", params.mlm_steps)
                 
                 # MLM steps (also includes TLM if lang2 is not None)
                 for lang1, lang2 in shuf_order(params.mlm_steps, params):
@@ -324,7 +318,8 @@ def main(params):
                     trainer.bt_step(lang1, lang2, lang3, params.lambda_bt)
 
                 trainer.iter()
-            else :
+        else :
+                # our
                 
                 """
                 Here we build language lists for each of our meta-taks. Indeed, for two language lists l1 and l2, 
@@ -332,61 +327,90 @@ def main(params):
                 """
                 lang1_dic, lang2_dic, lang3_dic = {}, {}, {}
                  
+                # equivalent to "for task in list of task" in the original algorithm,  except here we prepare all the tasks beforehand.
                 for lgs in params.meta_params.keys() :
                        
                     # CLM
-                    lang1_dic['clm_step'], lang2_dic['clm_step'] = [], []
+                    try :
+                        lang1_dic['clm_step']
+                    except KeyError :
+                        lang1_dic['clm_step'], lang2_dic['clm_step'] = [], []
                     for lang1, lang2 in shuf_order(params.meta_params[lgs].clm_steps, params):
                         lang1_dic['clm_step'].append(lang1)
                         lang2_dic['clm_step'].append(lang2)
                     
                     # MLM  
-                    lang1_dic['mlm_step'], lang2_dic['mlm_step'] = [], []
-                    #for lang1, lang2 in shuf_order(params.meta_params[lgs].mlm_steps, params):
-                    print(params.meta_params[lgs].mlm_steps)
-                    for lang1, lang2 in params.meta_params[lgs].mlm_steps :
+                    try :
+                        lang1_dic['mlm_step']
+                    except KeyError :
+                        lang1_dic['mlm_step'], lang2_dic['mlm_step'] = [], []
+                    for lang1, lang2 in shuf_order(params.meta_params[lgs].mlm_steps, params):
                         lang1_dic['mlm_step'].append(lang1)
                         lang2_dic['mlm_step'].append(lang2)
-                   
-                    # parallel classification 
-                    lang1_dic['pc_step'], lang2_dic['pc_step'] = [], []
+                           
+                    # parallel classification
+                    try :
+                        lang1_dic['pc_step']
+                    except KeyError :
+                        lang1_dic['pc_step'], lang2_dic['pc_step'] = [], []
                     for lang1, lang2 in shuf_order(params.meta_params[lgs].pc_steps, params):
                         lang1_dic['pc_step'].append(lang1)
                         lang2_dic['pc_step'].append(lang2)
                         
                     # denoising auto-encoder
-                    lang1_dic['ae_step'] = []
-                    for lang1 in shuf_order(params.meta_params[lgs].ae_steps, params):
+                    try :
+                        lang1_dic['ae_step']
+                    except KeyError :
+                        lang1_dic['ae_step'] = []
+                    for lang1 in shuf_order(params.meta_params[lgs].ae_steps):
                         lang1_dic['ae_step'].append(lang1)
                      
                     # machine translation 
-                    lang1_dic['mt_step'], lang2_dic['mt_step'] = [], []
+                    try :
+                        lang1_dic['mt_step']
+                    except KeyError :
+                        lang1_dic['mt_step'], lang2_dic['mt_step'] = [], []
                     for lang1, lang2 in shuf_order(params.meta_params[lgs].mt_steps, params):
                         lang1_dic['mt_step'].append(lang1)
                         lang2_dic['mt_step'].append(lang2)
                        
                     # back-translation
-                    lang1_dic['bt_step'], lang2_dic['bt_step'], lang3_dic['bt_step'] = [], [], []
-                    for lang1, lang2, lang3 in shuf_order(params.meta_params[lgs].bt_steps, params):
+                    try :
+                        lang1_dic['bt_step']
+                    except KeyError :
+                        lang1_dic['bt_step'], lang2_dic['bt_step'], lang3_dic['bt_step'] = [], [], []
+                    for lang1, lang2, lang3 in shuf_order(params.meta_params[lgs].bt_steps):
                         lang1_dic['bt_step'].append(lang1)
                         lang2_dic['bt_step'].append(lang2)
                         lang3_dic['bt_step'].append(lang3)
                         
-                # CLM steps
-                #trainer.clm_step(lang1_dic['clm_step'] , lang2_dic['clm_step'], params.lambda_clm)
-                # MLM steps (also includes TLM if lang2 is not None) 
-                trainer.mlm_step(lang1_dic['mlm_step'] , lang2_dic['mlm_step'], params.lambda_mlm)
-                # parallel classification steps
-                #trainer.pc_step(lang1_dic['pc_step'] , lang2_dic['pc_step'], params.lambda_pc)
-                # denoising auto-encoder steps
-                #trainer.mt_step(lang1_dic['ae_step'] , lang1_dic['ae_step'], params.lambda_ae)
-                # machine translation steps    
-                #trainer.mt_step(lang1_dic['mt_step'] , lang1_dic['mt_step'], params.lambda_mt)
-                # back-translation steps
-                #trainer.bt_step(lang1_dic['bt_step'] , lang1_dic['bt_step'], lang1_dic['bt_step'], params.lambda_bt)    
+                flag = True
+                
+                # equivalent to "while not done do" in the original algorithm
+                while flag :
+                        
+                    # CLM steps
+                    flag = trainer.clm_step(lang1_dic['clm_step'] , lang2_dic['clm_step'], params.lambda_clm)
                     
-                trainer.iter()        
+                    # MLM steps (also includes TLM if lang2 is not None) 
+                    flag = flag or trainer.mlm_step(lang1_dic['mlm_step'] , lang2_dic['mlm_step'], params.lambda_mlm)
+                    
+                    # parallel classification steps
+                    flag = flag or trainer.pc_step(lang1_dic['pc_step'] , lang2_dic['pc_step'], params.lambda_pc)
+                    
+                    if isinstance(trainer, EncDecTrainer) :
+                        
+                        # denoising auto-encoder steps
+                        flag = flag or trainer.mt_step(lang1_dic['ae_step'] , lang1_dic['ae_step'], params.lambda_ae)
 
+                        # machine translation steps    
+                        flag = flag or trainer.mt_step(lang1_dic['mt_step'] , lang1_dic['mt_step'], params.lambda_mt)
+
+                        # back-translation steps
+                        flag = flag or trainer.bt_step(lang1_dic['bt_step'] , lang1_dic['bt_step'], lang1_dic['bt_step'], params.lambda_bt)    
+                    
+                    trainer.iter()  
+                        
         logger.info("============ End of epoch %i ============" % trainer.epoch)
 
         # evaluate perplexity
@@ -394,6 +418,7 @@ def main(params):
        
         # print / JSON log
         for k, v in scores.items():
+            
             logger.info("%s -> %.6f" % (k, v))
         if params.is_master:
             logger.info("__log__:%s" % json.dumps(scores))
@@ -402,6 +427,10 @@ def main(params):
         trainer.save_best_model(scores)
         trainer.save_periodic()
         trainer.end_epoch(scores)
+        
+        # our
+        logger.info("============= Collecting %d ..." % gc.collect())
+        
 
 
 if __name__ == '__main__':
@@ -417,7 +446,7 @@ if __name__ == '__main__':
         params.debug_slurm = True
         params.debug_train = True
     
-    # Add by us
+    # our
     params.n_samples={}
     params.n_samples['train'] = params.train_n_samples
     params.n_samples['valid'] = params.valid_n_samples
@@ -433,46 +462,59 @@ if __name__ == '__main__':
     params.meta_learning = False
     
     meta_lgs = params.lgs.split("|")
-    meta_clm = params.clm_steps.split("|")
-    meta_mlm = params.mlm_steps.split("|")
-    meta_pc = params.pc_steps.split("|")
-    meta_mt = params.mt_steps.split("|")
-    meta_ae = params.ae_steps.split("|")
-    meta_bt = params.bt_steps.split("|")
     
     params.meta_params = {}
     params.n_task = len(meta_lgs)
     
+    meta_tmp = ["" for _ in range(params.n_task)]
+    
+    meta_clm = params.clm_steps.split("|")
+    if meta_clm[0] == "" :
+        meta_clm = meta_tmp
+    
+    meta_mlm = params.mlm_steps.split("|")
+    if meta_mlm[0] == "" :
+        meta_mlm = meta_tmp
+        
+    meta_pc = params.pc_steps.split("|")
+    if meta_pc[0] == "" :
+        meta_pc = meta_tmp
+        
+    meta_mt = params.mt_steps.split("|")
+    if meta_mt[0] == "" :
+        meta_mt = meta_tmp
+        
+    meta_ae = params.ae_steps.split("|")
+    if meta_ae[0] == "" :
+        meta_ae = meta_tmp
+        
+    meta_bt = params.bt_steps.split("|")
+    if meta_bt[0] == "" :
+        meta_bt = meta_tmp
+   
     langs, clms, mlms, pcs, mts, aes, bts = [], [], [], [], [], [], []
     
     if params.n_task != 1 :
         params.meta_learning = True
         
     # check parameters
-    #for lgs, clm, mlm, pc, mt, ae, bt in zip(meta_lgs, meta_clm, meta_mlm, meta_pc, meta_mt, meta_ae, meta_bt) :
-    for lgs, mlm in zip(meta_lgs, meta_mlm) :
-        params.lgs = lgs if lgs != "-" else ""
+    for meta_objectif in [meta_clm, meta_mlm, meta_pc, meta_mt, meta_ae, meta_bt] :
+        assert len(meta_objectif) == params.n_task
         
-        #params.clm_steps = clm if clm != "-" else ""
-        params.clm_steps = ""
+    for lgs, clm, mlm, pc, mt, ae, bt in zip(meta_lgs, meta_clm, meta_mlm, meta_pc, meta_mt, meta_ae, meta_bt) :
         
-        params.mlm_steps = mlm if mlm != "-" else ""
-        
-        #params.pc_steps = pc if pc != "-" else ""
-        params.pc_steps = ""
-        
-        #params.mt_steps = mt if mt != "-" else ""
-        params.mt_steps = ""
-        
-        #params.ae_steps = ae if ae != "-" else ""
-        params.ae_steps = ""
-        
-        #params.bt_steps = bt if bt != "-" else ""
-        params.bt_steps = ""
-        
-        #print("1", params.langs)
+        params.lgs = lgs 
+        params.clm_steps = clm 
+        params.mlm_steps = mlm 
+        params.pc_steps = pc 
+        params.mt_steps = mt 
+        params.ae_steps = ae    
+        params.bt_steps = bt 
         
         check_data_params(params)
+        check_model_params(params)
+        
+        params.meta_params[lgs] = copy.deepcopy(params)
         
         langs.append(params.langs)
         clms.append(params.clm_steps)
@@ -482,14 +524,6 @@ if __name__ == '__main__':
         aes.append(params.ae_steps)
         bts.append(params.bt_steps)
         
-        check_model_params(params)
-        
-        params.meta_params[lgs] = copy.deepcopy(params)
-    
-    #else :
-    #check_data_params(params)
-    #check_model_params(params)
-    
     if params.meta_learning :
         params.langs = langs
         params.clm_steps = clms
@@ -499,13 +533,6 @@ if __name__ == '__main__':
         params.ae_steps = aes
         params.bt_steps = bts
         
-    #if not params.meta_learning :
-        # necessaire lors du mask_out
-        #k = list(params.meta_params.keys())[0]
-        #params.n_words = params.meta_params[k].n_words
-        #params.mask_index = params.meta_params[k].mask_index
-        
-    #if params.meta_learning :
     params.lgs = meta_lgs
      
     # run experiment

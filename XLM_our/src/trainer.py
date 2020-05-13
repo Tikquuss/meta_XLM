@@ -17,6 +17,9 @@ from torch.nn import functional as F
 from torch.nn.utils import clip_grad_norm_
 import apex
 
+# our
+import copy
+
 from .optim import get_optimizer
 from .utils import to_cuda, concat_batches, find_modules
 from .utils import parse_lambda_config, update_lambdas
@@ -120,8 +123,9 @@ class Trainer(object):
         self.epoch = 0
         self.n_iter = 0
         self.n_total_iter = 0
-        self.n_sentences = 0
+        
         if not params.meta_learning :
+            self.n_sentences = 0
             self.stats = OrderedDict(
                 [('processed_s', 0), ('processed_w', 0)] +
                 [('CLM-%s' % l, []) for l in params.langs] +
@@ -136,11 +140,14 @@ class Trainer(object):
                 [('BT-%s-%s-%s' % (l1, l2, l3), []) for l1, l2, l3 in params.bt_steps]
             )
         else :
-            # todo : gérer l'affichage des stat pour le meta_learning
+            # todo : 
+            self.n_sentences = {}
+            
             self.stats = {}
              
             for lgs in params.meta_params.keys() :
-                  self.stats[lgs] = OrderedDict(
+                self.n_sentences[lgs] = 0
+                self.stats[lgs] = OrderedDict(
                         [('processed_s', 0), ('processed_w', 0)] +
                         [('CLM-%s' % l, []) for l in params.meta_params[lgs].langs] +
                         [('CLM-%s-%s' % (l1, l2), []) for l1, l2 in data[lgs]['para'].keys()] +
@@ -465,18 +472,23 @@ class Trainer(object):
             x2[:l2[i], i].copy_(torch.LongTensor(sentences[i]))
         return x2, l2
 
-    def word_blank(self, x, l):
+    def word_blank(self, x, l, data_key = None):
         """
         Randomly blank input words.
         """
-        if self.params.word_blank == 0:
+        # our
+        params = self.params
+        if data_key :
+            params = self.params.meta_params[data_key]
+        
+        if params.word_blank == 0:
             return x, l
-        assert 0 < self.params.word_blank < 1
+        assert 0 < params.word_blank < 1
 
         # define words to blank
-        eos = self.params.eos_index
+        eos = params.eos_index
         assert (x[0] == eos).sum() == l.size(0)
-        keep = np.random.rand(x.size(0) - 1, x.size(1)) >= self.params.word_blank
+        keep = np.random.rand(x.size(0) - 1, x.size(1)) >= params.word_blank
         keep[0] = 1  # do not blank the start sentence symbol
 
         sentences = []
@@ -484,23 +496,23 @@ class Trainer(object):
             assert x[l[i] - 1, i] == eos
             words = x[:l[i] - 1, i].tolist()
             # randomly blank words from the input
-            new_s = [w if keep[j, i] else self.params.mask_index for j, w in enumerate(words)]
+            new_s = [w if keep[j, i] else params.mask_index for j, w in enumerate(words)]
             new_s.append(eos)
             assert len(new_s) == l[i] and new_s[0] == eos and new_s[-1] == eos
             sentences.append(new_s)
         # re-construct input
-        x2 = torch.LongTensor(l.max(), l.size(0)).fill_(self.params.pad_index)
+        x2 = torch.LongTensor(l.max(), l.size(0)).fill_(params.pad_index)
         for i in range(l.size(0)):
             x2[:l[i], i].copy_(torch.LongTensor(sentences[i]))
         return x2, l
 
-    def add_noise(self, words, lengths):
+    def add_noise(self, words, lengths, data_key = None):
         """
         Add noise to the encoder input.
         """
         words, lengths = self.word_shuffle(words, lengths)
         words, lengths = self.word_dropout(words, lengths)
-        words, lengths = self.word_blank(words, lengths)
+        words, lengths = self.word_blank(words, lengths, data_key = data_key)
         return words, lengths
 
     def mask_out(self, x, lengths, data_key = None):
@@ -802,8 +814,9 @@ class Trainer(object):
         else :
             
             total_loss = 0
+            optimize_total_loss = False
             
-            # equivalent to : for task in list of task
+            # equivalent to "for task in list of task" in the original algorithm
             for lang1, lang2 in zip(lang1, lang2) :
                 
                 data_key = get_data_key(params, langs=[lang1, lang2])
@@ -811,43 +824,51 @@ class Trainer(object):
                 assert data_key, "Invalid data_key : can't be None"
                 assert self.data[data_key], "Invalid data_key : " + str(data_key) 
                 
-                # generate batch / select words to predict
-                x, lengths, positions, langs, _ = self.generate_batch(lang1, lang2, 'causal', data_key = data_key)
-                x, lengths, positions, langs, _ = self.round_batch(x, lengths, positions, langs)
-                alen = torch.arange(lengths.max(), dtype=torch.long, device=lengths.device)
-                pred_mask = alen[:, None] < lengths[None] - 1
-                if params.context_size > 0:  # do not predict without context
-                    pred_mask[:params.context_size] = 0
-                y = x[1:].masked_select(pred_mask[:-1])
-                assert pred_mask.sum().item() == y.size(0)
+                if self.n_sentences[data_key] < params.meta_params[data_key].epoch_size :
+                    
+                    optimize_total_loss = True 
+                
+                    # generate batch / select words to predict
+                    x, lengths, positions, langs, _ = self.generate_batch(lang1, lang2, 'causal', data_key = data_key)
+                    x, lengths, positions, langs, _ = self.round_batch(x, lengths, positions, langs)
+                    alen = torch.arange(lengths.max(), dtype=torch.long, device=lengths.device)
+                    pred_mask = alen[:, None] < lengths[None] - 1
+                    if params.context_size > 0:  # do not predict without context
+                        pred_mask[:params.context_size] = 0
+                    y = x[1:].masked_select(pred_mask[:-1])
+                    assert pred_mask.sum().item() == y.size(0)
 
-                # cuda
-                x, lengths, langs, pred_mask, y = to_cuda(x, lengths, langs, pred_mask, y)
+                    # cuda
+                    x, lengths, langs, pred_mask, y = to_cuda(x, lengths, langs, pred_mask, y)
 
-                # forward / loss
-                tensor = model('fwd', x=x, lengths=lengths, langs=langs, causal=True)
-                _, task_loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=False)
-                #self.stats[('CLM-%s' % lang1) if lang2 is None else ('CLM-%s-%s' % (lang1, lang2))].append(task_loss.item())
-                task_loss = lambda_coeff * task_loss
-                
-                total_loss = total_loss + task_loss
-                
-                # optimize
-                #self.optimize(loss)
-                
-                # our
-                """
-                RuntimeError: Trying to backward through the graph a second time, but the buffers have already been freed. 
-                Specify retain_graph=True when calling backward the first time.
-                """
-                self.optimize(loss, retain_graph=True)
+                    # forward / loss
+                    tensor = model('fwd', x=x, lengths=lengths, langs=langs, causal=True)
+                    _, task_loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=False)
+                    #self.stats[('CLM-%s' % lang1) if lang2 is None else ('CLM-%s-%s' % (lang1, lang2))].append(task_loss.item())
+                    task_loss = lambda_coeff * task_loss
 
-                # number of processed sentences / words
-                self.n_sentences += params.batch_size
-                #self.stats['processed_s'] += lengths.size(0)
-                #self.stats['processed_w'] += pred_mask.sum().item()
+                    total_loss = total_loss + task_loss
+
+                    # optimize
+                    #self.optimize(task_loss)
+
+                    # our
+                    """
+                    RuntimeError: Trying to backward through the graph a second time, but the buffers have already been freed. 
+                    Specify retain_graph=True when calling backward the first time.
+                    """
+                    self.optimize(task_loss, retain_graph=True)
+
+                    # number of processed sentences / words
+                    self.n_sentences[data_key] += params.meta_params[data_key].batch_size
+                    self.stats[data_key]['processed_s'] += lengths.size(0)
+                    self.stats[data_key]['processed_w'] += pred_mask.sum().item()
                 
-            self.optimize(total_loss)
+            if optimize_total_loss : 
+                self.optimize(total_loss)
+                return True
+            else :
+                return False
             
 
     def mlm_step(self, lang1, lang2, lambda_coeff):
@@ -893,8 +914,9 @@ class Trainer(object):
             # our
                 
             total_loss = 0
+            optimize_total_loss = False
             
-            # equivalent to : for task in list of task
+            # equivalent to "for task in list of task" in the original algorithm
             for lang1, lang2 in zip(lang1, lang2) :
                 
                 data_key = get_data_key(params, langs=[lang1, lang2])
@@ -902,38 +924,45 @@ class Trainer(object):
                 assert data_key, "Invalid data_key : can't be None"
                 assert self.data[data_key], "Invalid data_key : " + str(data_key) 
                 
-                # generate batch / select words to predict
-                x, lengths, positions, langs, _ = self.generate_batch(lang1, lang2, 'pred', data_key = data_key)
-                x, lengths, positions, langs, _ = self.round_batch(x, lengths, positions, langs)
-                x, y, pred_mask = self.mask_out(x, lengths, data_key = data_key)
-
-                # cuda
-                x, y, pred_mask, lengths, positions, langs = to_cuda(x, y, pred_mask, lengths, positions, langs)
-
-                # forward / loss
-                tensor = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)
-                _, task_loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=False)
-                self.stats[data_key][('MLM-%s' % lang1) if lang2 is None else ('MLM-%s-%s' % (lang1, lang2))].append(task_loss.item())
-                task_loss = lambda_coeff * task_loss
+                if self.n_sentences[data_key] < params.meta_params[data_key].epoch_size :
+                    
+                    optimize_total_loss = True
                 
-                total_loss = total_loss + task_loss 
+                    # generate batch / select words to predict
+                    x, lengths, positions, langs, _ = self.generate_batch(lang1, lang2, 'pred', data_key = data_key)
+                    x, lengths, positions, langs, _ = self.round_batch(x, lengths, positions, langs)
+                    x, y, pred_mask = self.mask_out(x, lengths, data_key = data_key)
 
-                # optimize
-                #self.optimize(loss)
-                
-                # our
-                """
-                RuntimeError: Trying to backward through the graph a second time, but the buffers have already been freed. 
-                Specify retain_graph=True when calling backward the first time.
-                """
-                self.optimize(task_loss, retain_graph=True)
+                    # cuda
+                    x, y, pred_mask, lengths, positions, langs = to_cuda(x, y, pred_mask, lengths, positions, langs)
 
-                # number of processed sentences / words
-                self.n_sentences += params.batch_size
-                self.stats[data_key]['processed_s'] += lengths.size(0)
-                self.stats[data_key]['processed_w'] += pred_mask.sum().item()
-                
-            self.optimize(total_loss)
+                    # forward / loss
+                    tensor = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)
+                    _, task_loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=False)
+                    self.stats[data_key][('MLM-%s' % lang1) if lang2 is None else ('MLM-%s-%s' % (lang1, lang2))].append(task_loss.item())
+                    task_loss = lambda_coeff * task_loss
+
+                    total_loss = total_loss + task_loss 
+
+                    # optimize
+                    #self.optimize(task_loss)
+                    """
+                    RuntimeError: Trying to backward through the graph a second time, but the buffers have already been freed. 
+                    Specify retain_graph=True when calling backward the first time.
+                    """
+                    # our
+                    self.optimize(task_loss, retain_graph=True)
+
+                    # number of processed sentences / words
+                    self.n_sentences[data_key] += params.meta_params[data_key].batch_size
+                    self.stats[data_key]['processed_s'] += lengths.size(0)
+                    self.stats[data_key]['processed_w'] += pred_mask.sum().item()
+            
+            if optimize_total_loss : 
+                self.optimize(total_loss)
+                return True
+            else :
+                return False
             
 
     def pc_step(self, lang1, lang2, lambda_coeff):
@@ -947,51 +976,127 @@ class Trainer(object):
         name = 'model' if params.encoder_only else 'encoder'
         model = getattr(self, name)
         model.train()
+        
+        if not params.meta_learning :
+            
+            lang1_id = params.lang2id[lang1]
+            lang2_id = params.lang2id[lang2]
 
-        lang1_id = params.lang2id[lang1]
-        lang2_id = params.lang2id[lang2]
+            # sample parallel sentences
+            (x1, len1), (x2, len2) = self.get_batch('align', lang1, lang2)
+            bs = len1.size(0)
+            if bs == 1:  # can happen (although very rarely), which makes the negative loss fail
+                self.n_sentences += params.batch_size
+                return
 
-        # sample parallel sentences
-        (x1, len1), (x2, len2) = self.get_batch('align', lang1, lang2)
-        bs = len1.size(0)
-        if bs == 1:  # can happen (although very rarely), which makes the negative loss fail
+            # associate lang1 sentences with their translations, and random lang2 sentences
+            y = torch.LongTensor(bs).random_(2)
+            idx_pos = torch.arange(bs)
+            idx_neg = ((idx_pos + torch.LongTensor(bs).random_(1, bs)) % bs)
+            idx = (y == 1).long() * idx_pos + (y == 0).long() * idx_neg
+            x2, len2 = x2[:, idx], len2[idx]
+
+            # generate batch / cuda
+            x, lengths, positions, langs = concat_batches(x1, len1, lang1_id, x2, len2, lang2_id, params.pad_index, params.eos_index, reset_positions=False)
+            x, lengths, positions, langs, new_idx = self.round_batch(x, lengths, positions, langs)
+            if new_idx is not None:
+                y = y[new_idx]
+            x, lengths, positions, langs = to_cuda(x, lengths, positions, langs)
+
+            # get sentence embeddings
+            h = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)[0]
+
+            # parallel classification loss
+            CLF_ID1, CLF_ID2 = 8, 9  # very hacky, use embeddings to make weights for the classifier
+            emb = (model.module if params.multi_gpu else model).embeddings.weight
+            pred = F.linear(h, emb[CLF_ID1].unsqueeze(0), emb[CLF_ID2, 0])
+            loss = F.binary_cross_entropy_with_logits(pred.view(-1), y.to(pred.device).type_as(pred))
+            self.stats['PC-%s-%s' % (lang1, lang2)].append(loss.item())
+            loss = lambda_coeff * loss
+
+            # optimize
+            self.optimize(loss)
+
+            # number of processed sentences / words
             self.n_sentences += params.batch_size
-            return
+            self.stats['processed_s'] += bs
+            self.stats['processed_w'] += lengths.sum().item()
+        else :
+            # our
+            # todo : test it
+             
+            total_loss = 0
+            optimize_total_loss = False
+            
+            # equivalent to "for task in list of task" in the original algorithm
+            for lang1, lang2 in zip(lang1, lang2) :
+                
+                data_key = get_data_key(params, langs=[lang1, lang2])
+                
+                assert data_key, "Invalid data_key : can't be None"
+                assert self.data[data_key], "Invalid data_key : " + str(data_key) 
+                
+                params_ = params.meta_params[data_key]
+                
+                if self.n_sentences[data_key] < params_.epoch_size :
+                    
+                    optimize_total_loss = True
+                    
+                    lang1_id = params_.lang2id[lang1]
+                    lang2_id = params_.lang2id[lang2]
 
-        # associate lang1 sentences with their translations, and random lang2 sentences
-        y = torch.LongTensor(bs).random_(2)
-        idx_pos = torch.arange(bs)
-        idx_neg = ((idx_pos + torch.LongTensor(bs).random_(1, bs)) % bs)
-        idx = (y == 1).long() * idx_pos + (y == 0).long() * idx_neg
-        x2, len2 = x2[:, idx], len2[idx]
+                    # sample parallel sentences
+                    (x1, len1), (x2, len2) = self.get_batch('align', lang1, lang2, data_key = data_key)
+                    bs = len1.size(0)
+                    if bs == 1:  # can happen (although very rarely), which makes the negative loss fail
+                        self.n_sentences += params.batch_size
+                        return
 
-        # generate batch / cuda
-        x, lengths, positions, langs = concat_batches(x1, len1, lang1_id, x2, len2, lang2_id, params.pad_index, params.eos_index, reset_positions=False)
-        x, lengths, positions, langs, new_idx = self.round_batch(x, lengths, positions, langs)
-        if new_idx is not None:
-            y = y[new_idx]
-        x, lengths, positions, langs = to_cuda(x, lengths, positions, langs)
+                    # associate lang1 sentences with their translations, and random lang2 sentences
+                    y = torch.LongTensor(bs).random_(2)
+                    idx_pos = torch.arange(bs)
+                    idx_neg = ((idx_pos + torch.LongTensor(bs).random_(1, bs)) % bs)
+                    idx = (y == 1).long() * idx_pos + (y == 0).long() * idx_neg
+                    x2, len2 = x2[:, idx], len2[idx]
 
-        # get sentence embeddings
-        h = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)[0]
+                    # generate batch / cuda
+                    x, lengths, positions, langs = concat_batches(x1, len1, lang1_id, x2, len2, lang2_id, params.pad_index, params.eos_index, reset_positions=False)
+                    x, lengths, positions, langs, new_idx = self.round_batch(x, lengths, positions, langs)
+                    if new_idx is not None:
+                        y = y[new_idx]
+                    x, lengths, positions, langs = to_cuda(x, lengths, positions, langs)
 
-        # parallel classification loss
-        CLF_ID1, CLF_ID2 = 8, 9  # very hacky, use embeddings to make weights for the classifier
-        emb = (model.module if params.multi_gpu else model).embeddings.weight
-        pred = F.linear(h, emb[CLF_ID1].unsqueeze(0), emb[CLF_ID2, 0])
-        loss = F.binary_cross_entropy_with_logits(pred.view(-1), y.to(pred.device).type_as(pred))
-        self.stats['PC-%s-%s' % (lang1, lang2)].append(loss.item())
-        loss = lambda_coeff * loss
+                    # get sentence embeddings
+                    h = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)[0]
 
-        # optimize
-        self.optimize(loss)
+                    # parallel classification loss
+                    CLF_ID1, CLF_ID2 = 8, 9  # very hacky, use embeddings to make weights for the classifier
+                    emb = (model.module if params.multi_gpu else model).embeddings.weight
+                    pred = F.linear(h, emb[CLF_ID1].unsqueeze(0), emb[CLF_ID2, 0])
+                    task_loss = F.binary_cross_entropy_with_logits(pred.view(-1), y.to(pred.device).type_as(pred))
+                    self.stats[data_key]['PC-%s-%s' % (lang1, lang2)].append(task_loss.item())
+                    task_loss = lambda_coeff * task_loss
 
-        # number of processed sentences / words
-        self.n_sentences += params.batch_size
-        self.stats['processed_s'] += bs
-        self.stats['processed_w'] += lengths.sum().item()
+                    # optimize
+                    #self.optimize(task_loss)
+                    """
+                    RuntimeError: Trying to backward through the graph a second time, but the buffers have already been freed. 
+                    Specify retain_graph=True when calling backward the first time.
+                    """
+                    # our
+                    self.optimize(task_loss, retain_graph=True)
 
+                    # number of processed sentences / words
+                    self.n_sentences[data_key] += params_.batch_size
+                    self.stats[data_key]['processed_s'] += bs
+                    self.stats[data_key]['processed_w'] += lengths.sum().item()
 
+            if optimize_total_loss : 
+                self.optimize(total_loss)
+                return True
+            else :
+                return False
+            
 class SingleTrainer(Trainer):
 
     def __init__(self, model, data, params):
@@ -1031,49 +1136,128 @@ class EncDecTrainer(Trainer):
         params = self.params
         self.encoder.train()
         self.decoder.train()
+        
+        if not params.meta_learning :
 
-        lang1_id = params.lang2id[lang1]
-        lang2_id = params.lang2id[lang2]
+            lang1_id = params.lang2id[lang1]
+            lang2_id = params.lang2id[lang2]
 
-        # generate batch
-        if lang1 == lang2:
-            (x1, len1) = self.get_batch('ae', lang1)
-            (x2, len2) = (x1, len1)
-            (x1, len1) = self.add_noise(x1, len1)
-        else:
-            (x1, len1), (x2, len2) = self.get_batch('mt', lang1, lang2)
-        langs1 = x1.clone().fill_(lang1_id)
-        langs2 = x2.clone().fill_(lang2_id)
+            # generate batch
+            if lang1 == lang2:
+                (x1, len1) = self.get_batch('ae', lang1)
+                (x2, len2) = (x1, len1)
+                (x1, len1) = self.add_noise(x1, len1)
+            else:
+                (x1, len1), (x2, len2) = self.get_batch('mt', lang1, lang2)
+            langs1 = x1.clone().fill_(lang1_id)
+            langs2 = x2.clone().fill_(lang2_id)
 
-        # target words to predict
-        alen = torch.arange(len2.max(), dtype=torch.long, device=len2.device)
-        pred_mask = alen[:, None] < len2[None] - 1  # do not predict anything given the last target word
-        y = x2[1:].masked_select(pred_mask[:-1])
-        assert len(y) == (len2 - 1).sum().item()
+            # target words to predict
+            alen = torch.arange(len2.max(), dtype=torch.long, device=len2.device)
+            pred_mask = alen[:, None] < len2[None] - 1  # do not predict anything given the last target word
+            y = x2[1:].masked_select(pred_mask[:-1])
+            assert len(y) == (len2 - 1).sum().item()
 
-        # cuda
-        x1, len1, langs1, x2, len2, langs2, y = to_cuda(x1, len1, langs1, x2, len2, langs2, y)
+            # cuda
+            x1, len1, langs1, x2, len2, langs2, y = to_cuda(x1, len1, langs1, x2, len2, langs2, y)
 
-        # encode source sentence
-        enc1 = self.encoder('fwd', x=x1, lengths=len1, langs=langs1, causal=False)
-        enc1 = enc1.transpose(0, 1)
+            # encode source sentence
+            enc1 = self.encoder('fwd', x=x1, lengths=len1, langs=langs1, causal=False)
+            enc1 = enc1.transpose(0, 1)
 
-        # decode target sentence
-        dec2 = self.decoder('fwd', x=x2, lengths=len2, langs=langs2, causal=True, src_enc=enc1, src_len=len1)
+            # decode target sentence
+            dec2 = self.decoder('fwd', x=x2, lengths=len2, langs=langs2, causal=True, src_enc=enc1, src_len=len1)
 
-        # loss
-        _, loss = self.decoder('predict', tensor=dec2, pred_mask=pred_mask, y=y, get_scores=False)
-        self.stats[('AE-%s' % lang1) if lang1 == lang2 else ('MT-%s-%s' % (lang1, lang2))].append(loss.item())
-        loss = lambda_coeff * loss
+            # loss
+            _, loss = self.decoder('predict', tensor=dec2, pred_mask=pred_mask, y=y, get_scores=False)
+            self.stats[('AE-%s' % lang1) if lang1 == lang2 else ('MT-%s-%s' % (lang1, lang2))].append(loss.item())
+            loss = lambda_coeff * loss
 
-        # optimize
-        self.optimize(loss)
+            # optimize
+            self.optimize(loss)
 
-        # number of processed sentences / words
-        self.n_sentences += params.batch_size
-        self.stats['processed_s'] += len2.size(0)
-        self.stats['processed_w'] += (len2 - 1).sum().item()
+            # number of processed sentences / words
+            self.n_sentences += params.batch_size
+            self.stats['processed_s'] += len2.size(0)
+            self.stats['processed_w'] += (len2 - 1).sum().item()
+        
+        else :
+            # our
+            
+            total_loss = 0
+            optimize_total_loss = False
+            
+            # equivalent to "for task in list of task" in the original algorithm
+            for lang1, lang2 in zip(lang1, lang2) :
+                
+                data_key = get_data_key(params, langs=[lang1, lang2])
+                
+                assert data_key, "Invalid data_key : can't be None"
+                assert self.data[data_key], "Invalid data_key : " + str(data_key) 
+                
+                params_ = params.meta_params[data_key]
+                
+                if self.n_sentences[data_key] < params_.epoch_size :
+                    
+                    optimize_total_loss = True
+                    
+                    lang1_id = params_.lang2id[lang1]
+                    lang2_id = params_.lang2id[lang2]
 
+                    # generate batch
+                    if lang1 == lang2:
+                        (x1, len1) = self.get_batch('ae', lang1, data_key = data_key)
+                        (x2, len2) = (x1, len1)
+                        (x1, len1) = self.add_noise(x1, len1, data_key = data_key)
+                    else:
+                        (x1, len1), (x2, len2) = self.get_batch('mt', lang1, lang2, data_key = data_key)
+                    langs1 = x1.clone().fill_(lang1_id)
+                    langs2 = x2.clone().fill_(lang2_id)
+
+                    # target words to predict
+                    alen = torch.arange(len2.max(), dtype=torch.long, device=len2.device)
+                    pred_mask = alen[:, None] < len2[None] - 1  # do not predict anything given the last target word
+                    y = x2[1:].masked_select(pred_mask[:-1])
+                    assert len(y) == (len2 - 1).sum().item()
+
+                    # cuda
+                    x1, len1, langs1, x2, len2, langs2, y = to_cuda(x1, len1, langs1, x2, len2, langs2, y)
+
+                    # encode source sentence
+                    enc1 = self.encoder('fwd', x=x1, lengths=len1, langs=langs1, causal=False)
+                    enc1 = enc1.transpose(0, 1)
+
+                    # decode target sentence
+                    dec2 = self.decoder('fwd', x=x2, lengths=len2, langs=langs2, causal=True, src_enc=enc1, src_len=len1)
+
+                    # loss
+                    _, task_loss = self.decoder('predict', tensor=dec2, pred_mask=pred_mask, y=y, get_scores=False)
+                    self.stats[data_key][('AE-%s' % lang1) if lang1 == lang2 else ('MT-%s-%s' % (lang1, lang2))].append(task_loss.item())
+                    task_loss = lambda_coeff * task_loss
+
+                    total_loss = total_loss + task_loss
+
+                    # optimize
+                    #self.optimize(task_loss)
+
+                    # our
+                    """
+                    RuntimeError: Trying to backward through the graph a second time, but the buffers have already been freed. 
+                    Specify retain_graph=True when calling backward the first time.
+                    """
+                    self.optimize(task_loss, retain_graph=True)
+
+                    # number of processed sentences / words
+                    self.n_sentences[data_key] += params_.batch_size
+                    self.stats[data_key]['processed_s'] += len2.size(0)
+                    self.stats[data_key]['processed_w'] += (len2 - 1).sum().item()
+                    
+            if optimize_total_loss : 
+                self.optimize(total_loss)
+                return True
+            else :
+                return False
+            
     def bt_step(self, lang1, lang2, lang3, lambda_coeff):
         """
         Back-translation step for machine translation.
@@ -1085,58 +1269,150 @@ class EncDecTrainer(Trainer):
         params = self.params
         _encoder = self.encoder.module if params.multi_gpu else self.encoder
         _decoder = self.decoder.module if params.multi_gpu else self.decoder
+        
+        if not params.meta_learning :
 
-        lang1_id = params.lang2id[lang1]
-        lang2_id = params.lang2id[lang2]
+            lang1_id = params.lang2id[lang1]
+            lang2_id = params.lang2id[lang2]
 
-        # generate source batch
-        x1, len1 = self.get_batch('bt', lang1)
-        langs1 = x1.clone().fill_(lang1_id)
+            # generate source batch
+            x1, len1 = self.get_batch('bt', lang1)
+            langs1 = x1.clone().fill_(lang1_id)
 
-        # cuda
-        x1, len1, langs1 = to_cuda(x1, len1, langs1)
+            # cuda
+            x1, len1, langs1 = to_cuda(x1, len1, langs1)
 
-        # generate a translation
-        with torch.no_grad():
+            # generate a translation
+            with torch.no_grad():
 
-            # evaluation mode
-            self.encoder.eval()
-            self.decoder.eval()
+                # evaluation mode
+                self.encoder.eval()
+                self.decoder.eval()
 
-            # encode source sentence and translate it
-            enc1 = _encoder('fwd', x=x1, lengths=len1, langs=langs1, causal=False)
-            enc1 = enc1.transpose(0, 1)
-            x2, len2 = _decoder.generate(enc1, len1, lang2_id, max_len=int(1.3 * len1.max().item() + 5))
-            langs2 = x2.clone().fill_(lang2_id)
+                # encode source sentence and translate it
+                enc1 = _encoder('fwd', x=x1, lengths=len1, langs=langs1, causal=False)
+                enc1 = enc1.transpose(0, 1)
+                x2, len2 = _decoder.generate(enc1, len1, lang2_id, max_len=int(1.3 * len1.max().item() + 5))
+                langs2 = x2.clone().fill_(lang2_id)
 
-            # free CUDA memory
-            del enc1
+                # free CUDA memory
+                del enc1
 
-            # training mode
-            self.encoder.train()
-            self.decoder.train()
+                # training mode
+                self.encoder.train()
+                self.decoder.train()
 
-        # encode generate sentence
-        enc2 = self.encoder('fwd', x=x2, lengths=len2, langs=langs2, causal=False)
-        enc2 = enc2.transpose(0, 1)
+            # encode generate sentence
+            enc2 = self.encoder('fwd', x=x2, lengths=len2, langs=langs2, causal=False)
+            enc2 = enc2.transpose(0, 1)
 
-        # words to predict
-        alen = torch.arange(len1.max(), dtype=torch.long, device=len1.device)
-        pred_mask = alen[:, None] < len1[None] - 1  # do not predict anything given the last target word
-        y1 = x1[1:].masked_select(pred_mask[:-1])
+            # words to predict
+            alen = torch.arange(len1.max(), dtype=torch.long, device=len1.device)
+            pred_mask = alen[:, None] < len1[None] - 1  # do not predict anything given the last target word
+            y1 = x1[1:].masked_select(pred_mask[:-1])
 
-        # decode original sentence
-        dec3 = self.decoder('fwd', x=x1, lengths=len1, langs=langs1, causal=True, src_enc=enc2, src_len=len2)
+            # decode original sentence
+            dec3 = self.decoder('fwd', x=x1, lengths=len1, langs=langs1, causal=True, src_enc=enc2, src_len=len2)
 
-        # loss
-        _, loss = self.decoder('predict', tensor=dec3, pred_mask=pred_mask, y=y1, get_scores=False)
-        self.stats[('BT-%s-%s-%s' % (lang1, lang2, lang3))].append(loss.item())
-        loss = lambda_coeff * loss
+            # loss
+            _, loss = self.decoder('predict', tensor=dec3, pred_mask=pred_mask, y=y1, get_scores=False)
+            self.stats[('BT-%s-%s-%s' % (lang1, lang2, lang3))].append(loss.item())
+            loss = lambda_coeff * loss
 
-        # optimize
-        self.optimize(loss)
+            # optimize
+            self.optimize(loss)
 
-        # number of processed sentences / words
-        self.n_sentences += params.batch_size
-        self.stats['processed_s'] += len1.size(0)
-        self.stats['processed_w'] += (len1 - 1).sum().item()
+            # number of processed sentences / words
+            self.n_sentences += params.batch_size
+            self.stats['processed_s'] += len1.size(0)
+            self.stats['processed_w'] += (len1 - 1).sum().item()
+        
+        else :
+            
+            total_loss = 0
+            optimize_total_loss = False
+            
+            # equivalent to "for task in list of task" in the original algorithm
+            for lang1, lang2 in zip(lang1, lang2) :
+                
+                data_key = get_data_key(params, langs=[lang1, lang2])
+                
+                assert data_key, "Invalid data_key : can't be None"
+                assert self.data[data_key], "Invalid data_key : " + str(data_key) 
+                
+                params_ = params.meta_params[data_key]
+                
+                if self.n_sentences[data_key] < params_.epoch_size :
+                    
+                    optimize_total_loss = True
+                    
+                    lang1_id = params_.lang2id[lang1]
+                    lang2_id = params_.lang2id[lang2]
+
+                    # generate source batch
+                    x1, len1 = self.get_batch('bt', lang1, data_key = data_key)
+                    langs1 = x1.clone().fill_(lang1_id)
+
+                    # cuda
+                    x1, len1, langs1 = to_cuda(x1, len1, langs1)
+
+                    # generate a translation
+                    with torch.no_grad():
+
+                        # evaluation mode
+                        self.encoder.eval()
+                        self.decoder.eval()
+
+                        # encode source sentence and translate it
+                        enc1 = _encoder('fwd', x=x1, lengths=len1, langs=langs1, causal=False)
+                        enc1 = enc1.transpose(0, 1)
+                        x2, len2 = _decoder.generate(enc1, len1, lang2_id, max_len=int(1.3 * len1.max().item() + 5))
+                        langs2 = x2.clone().fill_(lang2_id)
+
+                        # free CUDA memory
+                        del enc1
+
+                        # training mode
+                        self.encoder.train()
+                        self.decoder.train()
+
+                    # encode generate sentence
+                    enc2 = self.encoder('fwd', x=x2, lengths=len2, langs=langs2, causal=False)
+                    enc2 = enc2.transpose(0, 1)
+
+                    # words to predict
+                    alen = torch.arange(len1.max(), dtype=torch.long, device=len1.device)
+                    pred_mask = alen[:, None] < len1[None] - 1  # do not predict anything given the last target word
+                    y1 = x1[1:].masked_select(pred_mask[:-1])
+
+                    # decode original sentence
+                    dec3 = self.decoder('fwd', x=x1, lengths=len1, langs=langs1, causal=True, src_enc=enc2, src_len=len2)
+
+                    # loss
+                    _, task_loss = self.decoder('predict', tensor=dec3, pred_mask=pred_mask, y=y1, get_scores=False)
+                    self.stats[('BT-%s-%s-%s' % (lang1, lang2, lang3))].append(task_loss.item())
+                    task_loss = lambda_coeff * task_loss
+
+                    total_loss = total_loss + task_loss
+
+                    # optimize
+                    #self.optimize(task_loss)
+
+                    # our
+                    """
+                    RuntimeError: Trying to backward through the graph a second time, but the buffers have already been freed. 
+                    Specify retain_graph=True when calling backward the first time.
+                    """
+                    self.optimize(task_loss, retain_graph=True)
+
+                    # number of processed sentences / words
+                    self.n_sentences[data_key] += params_.batch_size
+                    self.stats[data_key]['processed_s'] += len1.size(0)
+                    self.stats[data_key]['processed_w'] += (len1 - 1).sum().item()
+                    
+                    
+            if optimize_total_loss : 
+                self.optimize(total_loss)
+                return True
+            else :
+                return False

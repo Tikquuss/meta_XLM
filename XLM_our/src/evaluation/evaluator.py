@@ -14,6 +14,8 @@ import torch
 
 from ..utils import to_cuda, restore_segmentation, concat_batches
 from ..model.memory import HashingMemory
+# our
+from ..trainer import get_data_key
 
 
 BLEU_SCRIPT_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'multi-bleu.perl')
@@ -157,6 +159,7 @@ class Evaluator(object):
         """
         params = self.params
         params.ref_paths = {}
+        
         if not params.meta_learning :
                 
             for (lang1, lang2), v in self.data['para'].items():
@@ -198,7 +201,6 @@ class Evaluator(object):
         else :
             # our 
             
-            #for lgs in params.meta_params.keys()
             for data in self.data.values():
                 try :
                     for (lang1, lang2), v in data['para'].items():
@@ -210,20 +212,20 @@ class Evaluator(object):
                             # define data paths
                             lang1_path = os.path.join(params.hyp_path, 'ref.{0}-{1}.{2}.txt'.format(lang2, lang1, data_set))
                             lang2_path = os.path.join(params.hyp_path, 'ref.{0}-{1}.{2}.txt'.format(lang1, lang2, data_set))
-
+                            
                             # store data paths
                             params.ref_paths[(lang2, lang1, data_set)] = lang1_path
                             params.ref_paths[(lang1, lang2, data_set)] = lang2_path
-
+                            
                             # text sentences
                             lang1_txt = []
                             lang2_txt = []
 
-                            # convert to text
-                            for (sent1, len1), (sent2, len2) in self.get_iterator(data_set, lang1, lang2):
+                            # convert to text : 
+                            for (sent1, len1), (sent2, len2) in self.get_iterator(data_set, lang1, lang2, data_key=get_data_key(params,[lang1, lang2])):
                                 lang1_txt.extend(convert_to_text(sent1, len1, self.dico, params))
                                 lang2_txt.extend(convert_to_text(sent2, len2, self.dico, params))
-
+                            
                             # replace <unk> by <<unk>> as these tokens cannot be counted in BLEU
                             lang1_txt = [x.replace('<unk>', '<<unk>>') for x in lang1_txt]
                             lang2_txt = [x.replace('<unk>', '<<unk>>') for x in lang2_txt]
@@ -313,6 +315,8 @@ class Evaluator(object):
                         scores['%s_mlm_acc' % data_set] = np.mean([scores['%s_%s_mlm_acc' % (data_set, lang)] for lang in _mlm_mono])
 
                 else :
+                    # our 
+                    # equivalent to "for task in list of task" in the original algorithm
                     for lgs, params in self.params.meta_params.items() :
                         
                         # todo : good data_key ?
@@ -427,6 +431,7 @@ class Evaluator(object):
         params = self.params
         if data_key :
             params = self.params.meta_params[data_key]
+            # todo ??
             params.multi_gpu = self.params.multi_gpu
             
         assert data_set in ['valid', 'test']

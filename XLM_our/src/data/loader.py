@@ -107,7 +107,7 @@ def load_mono_data(params, data):
     """
 
     def getEpochSize(a, b):
-        "Trouve le multiple de b le plus proche de a par valeur superieur, et on le divise par b"
+        "Find the multiple of b closest to a by greater than a, and divide it by b."
         i = a
         while True :
             if i%b == 0 :
@@ -139,7 +139,8 @@ def load_mono_data(params, data):
             bs = params.batch_size if splt == 'train' else 1
             data['mono_stream'][lang][splt] = StreamDataset(mono_data['sentences'], mono_data['positions'], bs, params)
             
-            # Add by us
+            # our :
+            # todo, todo, todo... : correct it
             n_sentences = data['mono_stream'][lang][splt].n_sentences
             if 0 < params.n_samples[splt] < n_sentences :
                 # todo : shuffle the dataset before selecting
@@ -155,11 +156,12 @@ def load_mono_data(params, data):
                 """
                 n_batches = data['mono_stream'][lang][splt].n_batches 
                 phrase_par_batch = n_sentences / n_batches
-                print("phrase_par_batch = " + str(int(phrase_par_batch)))
+                #print("phrase_par_batch = " + str(int(phrase_par_batch)))
                 n_batches = params.n_samples[splt] / phrase_par_batch
               
                 a = 0
                 b = int(n_batches)
+                #print("bbbbbbbb", b)
 
                 data['mono_stream'][lang][splt].select_data(a = a, b = b)
 
@@ -175,15 +177,16 @@ def load_mono_data(params, data):
 
                 # create batched dataset
                 dataset = Dataset(mono_data['sentences'], mono_data['positions'], params)
-        
-                # Modify by us
+       
                 # remove empty and too long sentences
-                #if splt == 'train':
-                dataset.remove_empty_sentences()
+                if splt == 'train':
+                    dataset.remove_empty_sentences()
+                    
+                # our
                 if params.remove_long_sentences[splt] :
                     dataset.remove_long_sentences(params.max_len)
 
-                # Add by us
+                # our
                 if 0 < params.n_samples[splt] < len(dataset.pos):
                     # todo : shuffle the dataset before selecting
                     dataset.select_data(a = 0, b = params.n_samples[splt])
@@ -243,14 +246,15 @@ def load_para_data(params, data):
                 params
             )
 
-            # Modify by us
             # remove empty and too long sentences
-            #if splt == 'train':
-            dataset.remove_empty_sentences()
+            if splt == 'train':
+                dataset.remove_empty_sentences()
+            
+            # our
             if params.remove_long_sentences[splt] :
                 dataset.remove_long_sentences(params.max_len)
             
-            # Add by us
+            # our
             if 0 < params.n_samples[splt] < len(dataset.pos1):
                 # todo : shuffle the dataset before selecting
                 dataset.select_data(a = 0, b = params.n_samples[splt])
@@ -369,16 +373,17 @@ def check_data_params(params):
 
 def load_data(params):
     """
-    Load monolingual data.
-    The returned dictionary contains:
+    Load data.
+    The returned (for each task in meta_learning) dictionary contains:
         - dico (dictionary)
         - vocab (FloatTensor)
-        - train / valid / test (monolingual datasets)
+        - train / valid / test (monolingual and parallel datasets)
     """
     data = {}
     for lgs, valeur in params.meta_params.items():
-    
-        logger.info(" langs: %s" % ", ".join(valeur.langs))
+        valeur.n_gpu_per_node = params.n_gpu_per_node
+        
+        logger.info("============ langs: %s" % ", ".join(valeur.langs))
         
         data[lgs] = {}
     
