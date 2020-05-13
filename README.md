@@ -1,13 +1,10 @@
-## I. Cross-lingual language model pretraining ([XLM](https://github.com/facebookresearch/XLM))
+## I. Cross-lingual language model pretraining ([XLM](https://github.com/facebookresearch/XLM))  
+
+See [facebookresearch/XLM](https://github.com/facebookresearch/XLM)
 
 ## II. Model-Agnostic Meta-Learning ([MAML](https://arxiv.org/abs/1911.02116))
 
 ## III. XLM + MAML
-
-
-# References  
-https://github.com/facebookresearch/XLM  
-https://lilianweng.github.io/lil-log/2018/11/30/meta-learning.html
 
 ## References
 
@@ -15,7 +12,7 @@ Please cite [[1]](https://arxiv.org/abs/1901.07291) and [[2]](https://arxiv.org/
 
 ### Cross-lingual Language Model Pretraining
 
-[1] G. Lample *, A. Conneau * [*Cross-lingual Language Model Pretraining*](https://arxiv.org/abs/1901.07291)
+[1] G. Lample *, A. Conneau * [*Cross-lingual Language Model Pretraining*](https://arxiv.org/abs/1901.07291) and [facebookresearch/XLM](https://github.com/facebookresearch/XLM)
 
 \* Equal contribution. Order has been determined with a coin flip.
 
@@ -30,7 +27,7 @@ Please cite [[1]](https://arxiv.org/abs/1901.07291) and [[2]](https://arxiv.org/
 
 ### Model-Agnostic Meta-Learning for Fast Adaptation of Deep Networks
 
-[1] Chelsea Finn, Pieter Abbeel, Sergey Levine [*Model-Agnostic Meta-Learning for Fast Adaptation of Deep Networks*](https://arxiv.org/abs/1911.02116)
+[2] Chelsea Finn, Pieter Abbeel, Sergey Levine [*Model-Agnostic Meta-Learning for Fast Adaptation of Deep Networks*](https://arxiv.org/abs/1911.02116) and [cbfinn/maml](https://github.com/cbfinn/maml)
 
 ```
 @article{lample2019cross,
