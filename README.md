@@ -48,7 +48,7 @@ We have the following files available for preprocessing:
 All these files must be in the same folder (`PARA_PATH`).  
 You can also (and optionally) have monolingual data available (en.txt, de.txt and fr.txt; in the `MONO_PATH`).  
 
-[OPUS collections](http://opus.nlpl.eu/) is a good source of dataset. We illustrate in the opus.sh script how to download the data from opus and convert it to a text file.
+[OPUS collections](http://opus.nlpl.eu/) is a good source of dataset. We illustrate in the [opus.sh](opus.sh) script how to download the data from opus and convert it to a text file.
 
 Move to the `XLM` folder in advance.  
 
