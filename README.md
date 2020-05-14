@@ -49,7 +49,8 @@ All these files must be in the same folder (`PARA_PATH`).
 You can also (and optionally) have monolingual data available (en.txt, de.txt and fr.txt; in `MONO_PATH` folder).  
 Parallel and monolingual data can all be in the same folder.
 
-[OPUS collections](http://opus.nlpl.eu/) is a good source of dataset. We illustrate in the [opus.sh](opus.sh) script how to download the data from opus and convert it to a text file.
+[OPUS collections](http://opus.nlpl.eu/) is a good source of dataset. We illustrate in the [opus.sh](opus.sh) script how to download the data from opus and convert it to a text file.  
+Another source for other_languages-english data is [anki Tab-delimited Bilingual Sentence Pairs](http://www.manythings.org/anki/). Simply download the .zip file, unzip to extract the other_language.txt file. This file usually contains data in the form of `sentence_en sentence_other_language other_information' on each line. You have to make your own extraction script in two files : en-ol.en.txt and en-ol.ol.txt with ol=other_language.
 
 Move to the `XLM` folder in advance.  
 
@@ -188,7 +189,7 @@ export NGPU=8; python -m torch.distributed.launch --nproc_per_node=$NGPU train.p
 
 **Tips**: Even when the validation perplexity plateaus, keep training your model. The larger the batch size the better (so using multiple GPUs will improve performance). Tuning the learning rate (e.g. [0.0001, 0.0002]) should help.
 
-#### 3. Train a (unsupervised/supervised) MT from a pretrained meta-model
+#### 3. Train a (unsupervised/supervised) MT from a pretrained meta-model 
 
 ```
 python train.py

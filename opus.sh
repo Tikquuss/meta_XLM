@@ -60,8 +60,6 @@ else
   exit
 fi
 
-
-# tokenize
 echo -e "\n"
 echo "*** Convert to txt***"
 for lg in $(echo $pair | sed -e 's/\-/ /g'); do

@@ -1333,9 +1333,9 @@ class EncDecTrainer(Trainer):
             optimize_total_loss = False
             
             # equivalent to "for task in list of task" in the original algorithm
-            for lang1, lang2 in zip(lang1, lang2) :
+            for lang1, lang2, lang3 in zip(lang1, lang2, lang3) :
                 
-                data_key = get_data_key(params, langs=[lang1, lang2])
+                data_key = get_data_key(params, langs=[lang1, lang2, lang3])
                 
                 assert data_key, "Invalid data_key : can't be None"
                 assert self.data[data_key], "Invalid data_key : " + str(data_key) 
@@ -1390,7 +1390,7 @@ class EncDecTrainer(Trainer):
 
                     # loss
                     _, task_loss = self.decoder('predict', tensor=dec3, pred_mask=pred_mask, y=y1, get_scores=False)
-                    self.stats[('BT-%s-%s-%s' % (lang1, lang2, lang3))].append(task_loss.item())
+                    self.stats[data_key][('BT-%s-%s-%s' % (lang1, lang2, lang3))].append(task_loss.item())
                     task_loss = lambda_coeff * task_loss
 
                     total_loss = total_loss + task_loss

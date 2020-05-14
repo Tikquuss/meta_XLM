@@ -404,10 +404,10 @@ def main(params):
                         flag = flag or trainer.mt_step(lang1_dic['ae_step'] , lang1_dic['ae_step'], params.lambda_ae)
 
                         # machine translation steps    
-                        flag = flag or trainer.mt_step(lang1_dic['mt_step'] , lang1_dic['mt_step'], params.lambda_mt)
+                        flag = flag or trainer.mt_step(lang1_dic['mt_step'] , lang2_dic['mt_step'], params.lambda_mt)
 
                         # back-translation steps
-                        flag = flag or trainer.bt_step(lang1_dic['bt_step'] , lang1_dic['bt_step'], lang1_dic['bt_step'], params.lambda_bt)    
+                        flag = flag or trainer.bt_step(lang1_dic['bt_step'] , lang2_dic['bt_step'], lang3_dic['bt_step'], params.lambda_bt)    
                     
                     trainer.iter()  
                         
