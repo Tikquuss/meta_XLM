@@ -28,7 +28,7 @@ fi
 echo -e "\n"
 echo "***Download data and unzip it in $PARA_PATH/$pair ***"
 
-# Prend 2 parametres : PARA_PATH source 
+# Take 2 parameters : PARA_PATH source 
 download_and_unzip_data() {
   wget -c http://opus.nlpl.eu/download.php?f=$2%2F${pair}.txt.zip -P $1/${pair}
   unzip -u $1/${pair}/download.php?f=$2%2F${pair}.txt.zip -d $1/${pair}

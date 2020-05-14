@@ -35,7 +35,7 @@ See [HowToTrainYourMAMLPytorch](https://github.com/AntreasAntoniou/HowToTrainYou
 
 ### Train your own meta_model
 
-#### 1. Preparing the data
+#### 1. Preparing the data 
 
 At this level, if you have pre-processed binary data in pth format (for example from XLM experimentation or improvised by yourself), please group them in a specific folder that you will mention as a parameter by calling the script train.py.  
 If this is not the case, we assume that you have txt files available for preprocessing. Look at the following example for which we have three translation tasks: English-French, English-German and French-German(see this [notebooks](notebooks/enfrde.ipynb) for details on the following).
@@ -46,9 +46,20 @@ We have the following files available for preprocessing:
 - de-fr.de.txt and de-fr.fr.txt 
 
 All these files must be in the same folder (`PARA_PATH`).  
-You can also (and optionally) have monolingual data available (en.txt, de.txt and fr.txt; in the `MONO_PATH`).
+You can also (and optionally) have monolingual data available (en.txt, de.txt and fr.txt; in the `MONO_PATH`).  
 
-Move to the `XLM` folder in advance.
+[OPUS collections](http://opus.nlpl.eu/) is a good source of dataset. We illustrate in the opus.sh script how to download the data from opus and convert it to a text file.
+
+Move to the `XLM` folder in advance.  
+
+Install the following dependencies ([fastBPE](https://github.com/facebookresearch/XLM/tree/master/tools#fastbpe) and [Moses](https://github.com/facebookresearch/XLM/tree/master/tools#tokenizers)) if you have not already done so. 
+```
+% cd tools
+! git clone https://github.com/moses-smt/mosesdecoder
+! git clone https://github.com/glample/fastBPE && cd fastBPE && g++ -std=c++11 -pthread -O3 fastBPE/main.cc -IfastBPE -o fast
+```
+
+Return to the `XLM` folder
 
 ```
 PARA=True          # If parallel data is available and you need to preprocess it
@@ -111,9 +122,20 @@ After this you will have the following (necessary) files in `$OUTPATH` (and `$OU
         - valid.en-fr.en.pth and valid.en-fr.fr.pth 
         - valid.en-de.en.pth and valid.en-de.de.pth
         - valid.de-fr.de.pth and valid.de-fr.fr.pth 
+ - code and vocab
 ```
 
 #### 2. Pretrain a language model
+
+Install the following dependencie ([Apex](https://github.com/nvidia/apex#quick-start)) if you have not already done so.
+```
+## Dependences : apex
+! git clone https://github.com/NVIDIA/apex
+%cd apex
+! pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
+```
+
+Go back to the `XLM` folder and start training
 
 ```
 python train.py
@@ -177,7 +199,6 @@ python train.py
 --dump_path ./dumped/                                         # where to store the experiment
 --reload_model '/dumped/mlm_enfrde/maml/best-valid_mlm_ppl.pth,/dumped/mlm_enfrde/maml/best-valid_mlm_ppl.pth'          
                                                               # model to reload for encoder,decoder
-
 ## data location / training objective
 --data_path $OUTPATH                                          # data location
 --lgs 'en-fr|en-de|de-fr'                                     # considered languages
@@ -234,7 +255,7 @@ MONO=True          # if you want to process monolingual data (if the monolingual
                    # leave this parameter set to True, the parallel data will be used to build the monolingual data)
 PARA_PATH=...      # folder containing the parallel data
 MONO_PATH=...      # folder containing the monolingual data
-CODE_VOCAB_MONO_PATH=... # File containing the codes and vocabularies from the previous meta-processing. 
+CODE_VOCAB_PATH=...# File containing the codes and vocabularies from the previous meta-processing. 
 
 test_size=10       # Percentage of test data (%)
 val_size=10        # Percentage of valid data (%)
@@ -265,6 +286,8 @@ n_samples=-1
 ```
 
 Let's consider the sub-task en-fr.
+
+Move to the `XLM` folder in advance.
 
 ```
 python train.py

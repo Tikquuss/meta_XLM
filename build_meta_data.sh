@@ -2,6 +2,8 @@
 
 # Usage: ./build_meta_data.sh $sub_task $n_samples $sub_task_data
 
+# All conditions are there to allow the script to resume or it stopped in case of a sudden stop.
+
 set -e
 
 # 1) if no parameters : stop
@@ -256,7 +258,7 @@ else
 fi
   
 echo -e "\n"
-echo "***Apply BPE tokenization on the parallel corpora.***"
+echo "***Apply BPE tokenization on the corpora.***"
 
 # if PARA = True (then PARA_PATH must exist)
 if [ $PARA = "True" ]; then
