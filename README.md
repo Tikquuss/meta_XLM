@@ -33,7 +33,7 @@ See [HowToTrainYourMAMLPytorch](https://github.com/AntreasAntoniou/HowToTrainYou
 
 ##### not availble for the moment
 
-### Train your own meta_model
+### Train your own meta-model
 
 #### 1. Preparing the data 
 
@@ -104,6 +104,8 @@ sub_task=en-fr:10,en-de:-1,de-fr:-1
 ./build_meta_data.sh $sub_task $n_samples 
 ```
 
+If you stop the execution when processing is being done on a file please delete this erroneous file before continuing or restarting the processing, otherwise the processing will continue with this erroneous file and potential errors will certainly occur.  
+
 After this you will have the following (necessary) files in `$OUTPATH` (and `$OUTPATH/fine_tune` depending on the parameter `$sub_task`):  
 
 ```
@@ -127,7 +129,7 @@ After this you will have the following (necessary) files in `$OUTPATH` (and `$OU
  - code and vocab
 ```
 
-#### 2. Pretrain a language meta-model
+#### 2. Pretrain a language meta-model 
 
 Install the following dependencie ([Apex](https://github.com/nvidia/apex#quick-start)) if you have not already done so.
 ```
@@ -173,6 +175,8 @@ python train.py
 --train_n_samples -1                    # Just consider train_n_sample train data
 --valid_n_samples -1                    # Just consider valid_n_sample validation data 
 --test_n_samples -1                     # Just consider test_n_sample test data for
+#### If you don't have enough RAM or swap memory, leave these three parameters to True, otherwise you may get an error like this when evaluating :
+#### RuntimeError: copy_if failed to synchronize: cudaErrorAssert: device-side assert triggered
 --remove_long_sentences_train True      # remove long sentences in train dataset
 --remove_long_sentences_valid False     # remove long sentences in valid dataset
 --remove_long_sentences_test False      # remove long sentences in test dataset
@@ -198,7 +202,7 @@ python train.py
 --exp_name meta_MT_enfrde                                     # experiment name
 --exp_id maml                                                 # Experiment ID
 --dump_path ./dumped/                                         # where to store the experiment (the model will be stored in $dump_path/$exp_name/$exp_id)
---reload_model '/dumped/mlm_enfrde/maml/best-valid_mlm_ppl.pth,/dumped/mlm_enfrde/maml/best-valid_mlm_ppl.pth'          
+--reload_model 'dumped/mlm_enfrde/maml/best-valid_mlm_ppl.pth,dumped/mlm_enfrde/maml/best-valid_mlm_ppl.pth'          
                                                               # model to reload for encoder,decoder
 ## data location / training objective
 --data_path $OUTPATH                                          # data location
@@ -233,6 +237,8 @@ python train.py
 --train_n_samples -1                    # Just consider train_n_sample train data
 --valid_n_samples -1                    # Just consider valid_n_sample validation data 
 --test_n_samples -1                     # Just consider test_n_sample test data for
+#### If you don't have enough RAM or swap memory, leave these three parameters to True, otherwise you may get an error like this when evaluating :
+#### RuntimeError: copy_if failed to synchronize: cudaErrorAssert: device-side assert triggered
 --remove_long_sentences_train True      # remove long sentences in train dataset
 --remove_long_sentences_valid False     # remove long sentences in valid dataset
 --remove_long_sentences_test False      # remove long sentences in test dataset
@@ -298,7 +304,7 @@ python train.py
 --exp_name meta_MT_enfr                                       # experiment name
 --exp_id maml                                                 # Experiment ID
 --dump_path ./dumped/                                         # where to store the experiment (the model will be stored in $dump_path/$exp_name/$exp_id)
---reload_model '/dumped/meta_MT_enfrde/maml/todo.pth,/dumped/meta_MT_enfrde/maml/todo.pth'   # model to reload for encoder,decoder
+--reload_model 'dumped/meta_MT_enfrde/maml/todo.pth,dumped/meta_MT_enfrde/maml/todo.pth'   # model to reload for encoder,decoder
 
 ## data location / training objective
 --data_path $OUTPATH/fine-tune                                # data location

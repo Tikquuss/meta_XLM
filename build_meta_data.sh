@@ -12,15 +12,14 @@ if [ $# = 0 ];then
 fi
 
 SUB_TASKS_DATA_PERCENT=${1-""}
+# 2) if no task : stop
+if [ $SUB_TASKS_DATA_PERCENT = "" ];then
+    exit
+fi
 
 N_SAMPLES=${2-'False'}
 if [ $N_SAMPLES -le 0 ];then
     N_SAMPLES=False
-fi
-
-# 2) if no task : stop
-if [ $SUB_TASKS_DATA_PERCENT = "" ];then
-    exit
 fi
 
 sub_tasks=""
@@ -64,7 +63,7 @@ elif [ $MONO = "True" ] && [ ! -d $PARA_PATH ] && [ ! -d $MONO_PATH ]; then
     exit
 fi
 
-# 7) Otherwise, it's okay, we keep going.
+# 8) Otherwise, it's okay, we keep going.
 echo "params ok !"
 
 #
@@ -265,7 +264,11 @@ if [ $PARA = "True" ]; then
     for pair in $(echo $sub_tasks | sed -e 's/\,/ /g'); do
         for lg in $(echo $pair | sed -e 's/\-/ /g'); do
             for split in train valid test; do
-                $FASTBPE applybpe $OUTPATH/$pair.$lg.$split $PARA_PATH/$pair.$lg.$split $OUTPATH/codes
+                if [ ! -f $OUTPATH/$pair.$lg.$split ]; then
+                    $FASTBPE applybpe $OUTPATH/$pair.$lg.$split $PARA_PATH/$pair.$lg.$split $OUTPATH/codes
+                else
+                    echo "file $OUTPATH/$pair.$lg.$split already exists"
+                fi
             done
         done
     done
@@ -277,15 +280,19 @@ if [ $MONO = "True" ] && [ -d $MONO_PATH ]; then
     for pair in $(echo $sub_tasks | sed -e 's/\,/ /g'); do
         for lg in $(echo $pair | sed -e 's/\-/ /g'); do
             for split in train valid test; do
-                $FASTBPE applybpe $OUTPATH/$split.$lg $MONO_PATH/$lg.$split $OUTPATH/codes
-                # Add para data to mono data before preprocessing
-                if [ $PARA = "True" ]; then
-                    for lg_tmp in $(echo $pair | sed -e 's/\-/ /g'); do
-                        for split_tmp in train valid test; do
-                            # Add the contents of $OUTPATH/$pair.$lg_tmp.$split_tmp after $OUTPATH/$split.$lg
-                            cat $OUTPATH/$pair.$lg_tmp.$split_tmp >> $OUTPATH/$split.$lg
+                if [ ! -f $OUTPATH/$split.$lg ]; then
+                    $FASTBPE applybpe $OUTPATH/$split.$lg $MONO_PATH/$lg.$split $OUTPATH/codes
+                    # Add para data to mono data before preprocessing
+                    if [ $PARA = "True" ]; then
+                        for lg_tmp in $(echo $pair | sed -e 's/\-/ /g'); do
+                            for split_tmp in train valid test; do
+                                # Add the contents of $OUTPATH/$pair.$lg_tmp.$split_tmp after $OUTPATH/$split.$lg
+                                cat $OUTPATH/$pair.$lg_tmp.$split_tmp >> $OUTPATH/$split.$lg
+                            done
                         done
-                    done
+                    fi
+                else
+                    echo "file $OUTPATH/$split.$lg already exists"
                 fi
             done
         done
@@ -303,7 +310,10 @@ build_fine_tune_data() {
     
     IFS=', ' read -r -a array1 <<< "$1"
     IFS=', ' read -r -a array2 <<< "$2"
-
+    
+    #echo ${array1[*]}
+    #echo ${array2[*]}
+    
     for (( i=0; i<${#array1[*]}; ++i)); do 
         data_percent=${array2[$i]}
         if [ $data_percent != "" ] && [ $data_percent -gt 0 ] ;then
@@ -312,17 +322,16 @@ build_fine_tune_data() {
                 for split in train valid test; do
                     # PARA
                     name=$OUTPATH/$pair.$lg.$split
-                    # todo : fix this error that prevents the creation of refining files
-                    # ../build_meta_data.sh: line 315: 4001 data/enfrde/processed/en-fr.en.train+1: syntax error 
-                    # in expression (error token is "data/enfrde/processed/en-fr.en.train+1")
-                    NLINES=`wc -l $name  | awk -F " " '{print $name}'`;
+                    NLINES=`wc -l $name`;
+                    IFS=' ' read -r -a array <<< "$NLINES"
+                    NLINES=${array[0]}
                     NLINES=$(($NLINES+1));
-                    N_FINE_TUNE=$(((NLINES*$data_percent)/100))
+                    N_FINE_TUNE=$((($NLINES*$data_percent)/100))
                     if [ $NLINES -le $N_FINE_TUNE ]; then
                         # todo : exit
                         echo "error"
                     else
-                        NREST=$((NLINES - $N_FINE_TUNE));
+                        NREST=$(($NLINES - $N_FINE_TUNE));
                         mv $OUTPATH/$pair.$lg.$split $OUTPATH/$pair.$lg.$split.tmp
                         shuf --random-source=<(get_seeded_random 42) $OUTPATH/$pair.$lg.$split.tmp | head -$NREST > $OUTPATH/$pair.$lg.$split;
                         shuf --random-source=<(get_seeded_random 42) $OUTPATH/$pair.$lg.$split.tmp | tail -$N_FINE_TUNE > $OUTPATH/fine_tune/$pair.$lg.$split;
@@ -332,17 +341,20 @@ build_fine_tune_data() {
 
                     # MONO
                     name=$OUTPATH/$split.$lg
-                    NLINES=`wc -l $name | awk -F " " '{print $name}'`;
+                    #NLINES=`wc -l $name | awk -F " " '{print $name}'`;
+                    NLINES=`wc -l $name`;
+                    IFS=' ' read -r -a array <<< "$NLINES"
+                    NLINES=${array[0]}
                     NLINES=$(($NLINES+1));
-                    N_FINE_TUNE=$(((NLINES*$data_percent)/100))
+                    N_FINE_TUNE=$((($NLINES*$data_percent)/100))
                     if [ $NLINES -le $N_FINE_TUNE ]; then
                         # todo : exit
                         echo "error"
                     else
-                        NREST=$((NLINES - $N_FINE_TUNE));
-                        rm $OUTPATH/$split.$lg $OUTPATH/$split.$lg.tmp
+                        NREST=$(($NLINES - $N_FINE_TUNE));
+                        mv $OUTPATH/$split.$lg $OUTPATH/$split.$lg.tmp
                         shuf --random-source=<(get_seeded_random 42) $OUTPATH/$split.$lg.tmp | head -$NREST > $OUTPATH/$split.$lg; 
-                        shuf --random-source=<(get_seeded_random 42) $OUTPATH/$split.$lg.tmp | tail -$N_FINE_TUNE > $MONO_PATH/fine_tune/$split.$lg;
+                        shuf --random-source=<(get_seeded_random 42) $OUTPATH/$split.$lg.tmp | tail -$N_FINE_TUNE > $OUTPATH/fine_tune/$split.$lg;
                         # todo : memory
                         rm $OUTPATH/$split.$lg.tmp
                     fi
@@ -362,9 +374,17 @@ if [ $PARA = "True" ]; then
     for pair in $(echo $sub_tasks | sed -e 's/\,/ /g'); do
         for lg in $(echo $pair | sed -e 's/\-/ /g'); do
             for split in train valid test; do
-                python preprocess.py $OUTPATH/vocab $OUTPATH/$pair.$lg.$split
+                if [ ! -f $OUTPATH/$pair.$lg.$split.pth ]; then
+                    python preprocess.py $OUTPATH/vocab $OUTPATH/$pair.$lg.$split
+                else
+                    echo "file $OUTPATH/$pair.$lg.$split.pth already exists"
+                fi
                 if [ -f $OUTPATH/fine_tune/$pair.$lg.$split ]; then
-                    python preprocess.py $OUTPATH/vocab $OUTPATH/fine_tune/$pair.$lg.$split
+                    if [ ! -f $OUTPATH/fine_tune/$pair.$lg.$split.pth ]; then
+                        python preprocess.py $OUTPATH/vocab $OUTPATH/fine_tune/$pair.$lg.$split
+                    else
+                        echo "file $OUTPATH/fine_tune/$pair.$lg.$split.pth already exists"
+                    fi
                 fi
             done
         done
@@ -377,9 +397,17 @@ if [ $MONO = "True" ] && [ -d $MONO_PATH ]; then
     for pair in $(echo $sub_tasks | sed -e 's/\,/ /g'); do
         for lg in $(echo $pair | sed -e 's/\-/ /g'); do
             for split in train valid test; do
-                python preprocess.py $OUTPATH/vocab $OUTPATH/$split.$lg
+                if [ ! -f $OUTPATH/$split.$lg.pth ]; then
+                    python preprocess.py $OUTPATH/vocab $OUTPATH/$split.$lg
+                else
+                    echo "file $OUTPATH/$split.$lg.pth already exists"
+                fi
                 if [ -f $OUTPATH/fine_tune/$split.$lg ]; then
-                    python preprocess.py $OUTPATH/vocab $OUTPATH/fine_tune/$split.$lg
+                    if [ ! -f $OUTPATH/fine_tune/$split.$lg.pth ]; then
+                        python preprocess.py $OUTPATH/vocab $OUTPATH/fine_tune/$split.$lg
+                    else
+                        echo "file $OUTPATH/fine_tune/$split.$lg.pth already exists"
+                    fi
                 fi
             done
         done
@@ -395,9 +423,17 @@ if [ $MONO = "True" ] && [ ! -d $MONO_PATH ] && [ -d $PARA_PATH ]; then
     for pair in $(echo $sub_tasks | sed -e 's/\,/ /g'); do
         for lg in $(echo $pair | sed -e 's/\-/ /g'); do
             for split in train valid test; do
-                cp $OUTPATH/$pair.$lg.$split.pth $OUTPATH/$split.$lg.pth
+                if [ ! -f $OUTPATH/$split.$lg.pth ]; then
+                    cp $OUTPATH/$pair.$lg.$split.pth $OUTPATH/$split.$lg.pth
+                else
+                    echo "file $OUTPATH/$split.$lg.pth already exists"
+                fi
                 if [ -f $OUTPATH/fine_tune/$pair.$lg.$split.pth ]; then
-                    cp $OUTPATH/fine_tune/$pair.$lg.$split.pth $OUTPATH/fine_tune/$split.$lg.pth
+                    if [ ! -f $OUTPATH/fine_tune/$split.$lg.pth ]; then
+                        cp $OUTPATH/fine_tune/$pair.$lg.$split.pth $OUTPATH/fine_tune/$split.$lg.pth
+                    else
+                        echo "file $OUTPATH/fine_tune/$split.$lg.pth already exists"
+                    fi
                 fi  
             done
         done
@@ -409,9 +445,17 @@ echo "***Creat the file to train the XLM model with MLM+TLM objective***"
 for pair in $(echo $sub_tasks | sed -e 's/\,/ /g'); do
     for lg in $(echo $pair | sed -e 's/\-/ /g'); do
         for split in train valid test; do
-            cp $OUTPATH/$pair.$lg.$split.pth $OUTPATH/$split.$pair.$lg.pth
+            if [ ! -f $OUTPATH/$split.$pair.$lg.pth ]; then
+                cp $OUTPATH/$pair.$lg.$split.pth $OUTPATH/$split.$pair.$lg.pth
+            else
+                echo "file $OUTPATH/$split.$pair.$lg.pth already exists"
+            fi
             if [ -f $OUTPATH/fine_tune/$pair.$lg.$split.pth ]; then
-                cp $OUTPATH/fine_tune/$pair.$lg.$split.pth $OUTPATH/fine_tune/$split.$pair.$lg.pth
+                if [ ! -f $OUTPATH/fine_tune/$split.$pair.$lg.pth ]; then
+                    cp $OUTPATH/fine_tune/$pair.$lg.$split.pth $OUTPATH/fine_tune/$split.$pair.$lg.pth
+                else
+                    echo "file $OUTPATH/fine_tune/$split.$pair.$lg.pth already exists"
+                fi
             fi    
         done
     done

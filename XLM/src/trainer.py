@@ -771,7 +771,7 @@ class Trainer(object):
         assert x.size(1) % 8 == 0
         return x, lengths, positions, langs, idx
 
-    def clm_step(self, lang1, lang2, lambda_coeff):
+    def clm_step(self, lang1, lang2, lambda_coeff, data_keys = []):
         """
         Next word prediction step (causal prediction).
         CLM objective.
@@ -817,9 +817,9 @@ class Trainer(object):
             optimize_total_loss = False
             
             # equivalent to "for task in list of task" in the original algorithm
-            for lang1, lang2 in zip(lang1, lang2) :
+            for lang1, lang2, data_key in zip(lang1, lang2, data_keys) :
                 
-                data_key = get_data_key(params, langs=[lang1, lang2])
+                #data_key = get_data_key(params, langs=[lang1, lang2])
                 
                 assert data_key, "Invalid data_key : can't be None"
                 assert self.data[data_key], "Invalid data_key : " + str(data_key) 
@@ -871,7 +871,7 @@ class Trainer(object):
                 return False
             
 
-    def mlm_step(self, lang1, lang2, lambda_coeff):
+    def mlm_step(self, lang1, lang2, lambda_coeff, data_keys = []):
         """
         Masked word prediction step.
         MLM objective is lang2 is None, TLM objective otherwise.
@@ -917,9 +917,9 @@ class Trainer(object):
             optimize_total_loss = False
             
             # equivalent to "for task in list of task" in the original algorithm
-            for lang1, lang2 in zip(lang1, lang2) :
+            for lang1, lang2, data_key in zip(lang1, lang2, data_keys) :
                 
-                data_key = get_data_key(params, langs=[lang1, lang2])
+                #data_key = get_data_key(params, langs=[lang1, lang2])
                 
                 assert data_key, "Invalid data_key : can't be None"
                 assert self.data[data_key], "Invalid data_key : " + str(data_key) 
@@ -965,7 +965,7 @@ class Trainer(object):
                 return False
             
 
-    def pc_step(self, lang1, lang2, lambda_coeff):
+    def pc_step(self, lang1, lang2, lambda_coeff, data_keys = []):
         """
         Parallel classification step. Predict if pairs of sentences are mutual translations of each other.
         """
@@ -1029,9 +1029,9 @@ class Trainer(object):
             optimize_total_loss = False
             
             # equivalent to "for task in list of task" in the original algorithm
-            for lang1, lang2 in zip(lang1, lang2) :
+            for lang1, lang2, data_key in zip(lang1, lang2, data_keys) :
                 
-                data_key = get_data_key(params, langs=[lang1, lang2])
+                #data_key = get_data_key(params, langs=[lang1, lang2])
                 
                 assert data_key, "Invalid data_key : can't be None"
                 assert self.data[data_key], "Invalid data_key : " + str(data_key) 
@@ -1125,7 +1125,7 @@ class EncDecTrainer(Trainer):
 
         super().__init__(data, params)
 
-    def mt_step(self, lang1, lang2, lambda_coeff):
+    def mt_step(self, lang1, lang2, lambda_coeff, data_keys = []):
         """
         Machine translation step.
         Can also be used for denoising auto-encoding.
@@ -1188,9 +1188,9 @@ class EncDecTrainer(Trainer):
             optimize_total_loss = False
             
             # equivalent to "for task in list of task" in the original algorithm
-            for lang1, lang2 in zip(lang1, lang2) :
+            for lang1, lang2, data_key in zip(lang1, lang2, data_keys) :
                 
-                data_key = get_data_key(params, langs=[lang1, lang2])
+                #data_key = get_data_key(params, langs=[lang1, lang2])
                 
                 assert data_key, "Invalid data_key : can't be None"
                 assert self.data[data_key], "Invalid data_key : " + str(data_key) 
@@ -1258,7 +1258,7 @@ class EncDecTrainer(Trainer):
             else :
                 return False
             
-    def bt_step(self, lang1, lang2, lang3, lambda_coeff):
+    def bt_step(self, lang1, lang2, lang3, lambda_coeff, data_keys = []):
         """
         Back-translation step for machine translation.
         """
@@ -1333,9 +1333,9 @@ class EncDecTrainer(Trainer):
             optimize_total_loss = False
             
             # equivalent to "for task in list of task" in the original algorithm
-            for lang1, lang2, lang3 in zip(lang1, lang2, lang3) :
+            for lang1, lang2, lang3, data_key in zip(lang1, lang2, lang3, data_keys) :
                 
-                data_key = get_data_key(params, langs=[lang1, lang2, lang3])
+                #data_key = get_data_key(params, langs=[lang1, lang2, lang3])
                 
                 assert data_key, "Invalid data_key : can't be None"
                 assert self.data[data_key], "Invalid data_key : " + str(data_key) 

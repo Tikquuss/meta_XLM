@@ -319,7 +319,6 @@ class Evaluator(object):
                     # equivalent to "for task in list of task" in the original algorithm
                     for lgs, params in self.params.meta_params.items() :
                         
-                        # todo : good data_key ?
                         data_key=lgs
                         
                         """
