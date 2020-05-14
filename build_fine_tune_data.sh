@@ -186,55 +186,44 @@ fi
 # mono
 # if MONO = True &&  MONO_PATH exist
 if [ $MONO = "True" ] && [ -d $MONO_PATH ]; then
-    for pair in $(echo $sub_tasks | sed -e 's/\,/ /g'); do
-        for lg in $(echo $pair | sed -e 's/\-/ /g'); do
-            for split in train valid test; do
-                $FASTBPE applybpe $OUTPATH/fine_tune/$split.$lg $MONO_PATH/$lg.$split $CODE_VOCAB_PATH/codes
-                # Add para data to mono data before preprocessing
-                if [ $PARA = "True" ]; then
-                    for lg_tmp in $(echo $pair | sed -e 's/\-/ /g'); do
-                        for split_tmp in train valid test; do
-                            # Add the contents of $OUTPATH/$pair.$lg_tmp.$split_tmp after $OUTPATH/$split.$lg
-                            cat $OUTPATH/fine_tune/$pair.$lg_tmp.$split_tmp >> $OUTPATH/$split.$lg
-                        done
+    for lg in $(echo $pair | sed -e 's/\-/ /g'); do
+        for split in train valid test; do
+            $FASTBPE applybpe $OUTPATH/fine_tune/$split.$lg $MONO_PATH/$lg.$split $CODE_VOCAB_PATH/codes
+            # Add para data to mono data before preprocessing
+            if [ $PARA = "True" ]; then
+                for lg_tmp in $(echo $pair | sed -e 's/\-/ /g'); do
+                    for split_tmp in train valid test; do
+                        # Add the contents of $OUTPATH/$pair.$lg_tmp.$split_tmp after $OUTPATH/$split.$lg
+                        cat $OUTPATH/fine_tune/$pair.$lg_tmp.$split_tmp >> $OUTPATH/$split.$lg
                     done
-                fi
-                python preprocess.py $CODE_VOCAB_PATH/vocab $OUTPATH/fine_tune/$split.$lg
-            done
+                done
+            fi
+            python preprocess.py $CODE_VOCAB_PATH/vocab $OUTPATH/fine_tune/$split.$lg
         done
     done
 fi
 
-
 # if MONO = True && MONO_PATH does not exist && PARA_PATH exists
-if [ $MONO = "True" ] && [ ! -d $MONO_PATH ] && [ ! -d $PARA_PATH ]; then
+if [ $MONO = "True" ] && [ ! -d $MONO_PATH ] && [ -d $PARA_PATH ]; then
     # We use our parallel data to construct the monolingual data 
     echo -e "\n"
     echo "***Using parallel data to construct monolingual data***"
-    for pair in $(echo $sub_tasks | sed -e 's/\,/ /g'); do
-        for lg in $(echo $pair | sed -e 's/\-/ /g'); do
-            for split in train valid test; do
-                cp $OUTPATH/$pair.$lg.$split.pth $OUTPATH/$split.$lg.pth
-                if [ -f $OUTPATH/fine_tune/$pair.$lg.$split.pth ]; then
-                    cp $OUTPATH/fine_tune/$pair.$lg.$split.pth $OUTPATH/fine_tune/$split.$lg.pth
-                fi  
-            done
+    for lg in $(echo $pair | sed -e 's/\-/ /g'); do
+        for split in train valid test; do
+            cp $OUTPATH/fine_tune/$pair.$lg.$split.pth $OUTPATH/fine_tune/$split.$lg.pth      
         done
     done
 fi
 
 echo -e "\n"
 echo "***Creat the file to train the XLM model with MLM+TLM objective***"
-for pair in $(echo $sub_tasks | sed -e 's/\,/ /g'); do
-    for lg in $(echo $pair | sed -e 's/\-/ /g'); do
-        for split in train valid test; do
-            cp $OUTPATH/$pair.$lg.$split.pth $OUTPATH/$split.$pair.$lg.pth
-            if [ -f $OUTPATH/fine_tune/$pair.$lg.$split.pth ]; then
-                cp $OUTPATH/fine_tune/$pair.$lg.$split.pth $OUTPATH/fine_tune/$split.$pair.$lg.pth
-            fi    
-        done
+
+for lg in $(echo $pair | sed -e 's/\-/ /g'); do
+    for split in train valid test; do
+        cp $OUTPATH/fine_tune/$pair.$lg.$split.pth $OUTPATH/fine_tune/$split.$pair.$lg.pth  
     done
 done
 
+
 echo -e "\n"
-echo "*** build data with succes : dir $OUTPATH ***"
+echo "*** build data with succes : dir $OUTPATH/fine_tune ***"

@@ -388,7 +388,7 @@ fi
 
 
 # if MONO = True && MONO_PATH does not exist && PARA_PATH exists
-if [ $MONO = "True" ] && [ ! -d $MONO_PATH ] && [ ! -d $PARA_PATH ]; then
+if [ $MONO = "True" ] && [ ! -d $MONO_PATH ] && [ -d $PARA_PATH ]; then
     # We use our parallel data to construct the monolingual data 
     echo -e "\n"
     echo "***Using parallel data to construct monolingual data***"

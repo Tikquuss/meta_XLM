@@ -46,7 +46,7 @@ We have the following files available for preprocessing:
 - de-fr.de.txt and de-fr.fr.txt 
 
 All these files must be in the same folder (`PARA_PATH`).  
-You can also (and optionally) have monolingual data available (en.txt, de.txt and fr.txt; in the `MONO_PATH`).  
+You can also (and optionally) have monolingual data available (en.txt, de.txt and fr.txt; in `MONO_PATH` folder).  
 
 [OPUS collections](http://opus.nlpl.eu/) is a good source of dataset. We illustrate in the [opus.sh](opus.sh) script how to download the data from opus and convert it to a text file.
 
@@ -54,9 +54,9 @@ Move to the `XLM` folder in advance.
 
 Install the following dependencies ([fastBPE](https://github.com/facebookresearch/XLM/tree/master/tools#fastbpe) and [Moses](https://github.com/facebookresearch/XLM/tree/master/tools#tokenizers)) if you have not already done so. 
 ```
-% cd tools
-! git clone https://github.com/moses-smt/mosesdecoder
-! git clone https://github.com/glample/fastBPE && cd fastBPE && g++ -std=c++11 -pthread -O3 fastBPE/main.cc -IfastBPE -o fast
+cd tools
+git clone https://github.com/moses-smt/mosesdecoder
+git clone https://github.com/glample/fastBPE && cd fastBPE && g++ -std=c++11 -pthread -O3 fastBPE/main.cc -IfastBPE -o fast
 ```
 
 Return to the `XLM` folder
@@ -94,7 +94,7 @@ n_samples=-1
 
 # If you don't have any other data to fine-tune your model on a specific sub-task, specify the percentage of the sub-task metadata to consider or -1 to ignore it.
 
-sub_task=en-fr:10,en-de:-1,de-fr:1
+sub_task=en-fr:10,en-de:-1,de-fr:-1
 
 # Transform (tokenize, lower and remove accent, loard code and vocab, learn and apply BPE tokenization, binarize...) our data contained 
 # in the text files into a pth file understandable by the framework : takes a lot of time with dataset size, nCodes and shuf_n_samples
@@ -102,7 +102,7 @@ sub_task=en-fr:10,en-de:-1,de-fr:1
 ./build_meta_data.sh $sub_task $n_samples 
 ```
 
-After this you will have the following (necessary) files in `$OUTPATH` (and `$OUTPATH/fine_tune` on request):  
+After this you will have the following (necessary) files in `$OUTPATH` (and `$OUTPATH/fine_tune` depending on the parameter `$sub_task`):  
 
 ```
 - monolingual data :
@@ -125,14 +125,13 @@ After this you will have the following (necessary) files in `$OUTPATH` (and `$OU
  - code and vocab
 ```
 
-#### 2. Pretrain a language model
+#### 2. Pretrain a language meta-model
 
 Install the following dependencie ([Apex](https://github.com/nvidia/apex#quick-start)) if you have not already done so.
 ```
-## Dependences : apex
-! git clone https://github.com/NVIDIA/apex
-%cd apex
-! pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
+git clone https://github.com/NVIDIA/apex
+cd apex
+pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
 ```
 
 Go back to the `XLM` folder and start training
@@ -143,11 +142,11 @@ python train.py
 ## main parameters
 --exp_name mlm_enfrde                  # experiment name
 --exp_id maml                          # Experiment ID
---dump_path ./dumped                   # where to store the experiment (the model will be stored in dump_path/exp_id/exp_name)
+--dump_path ./dumped                   # where to store the experiment (the model will be stored in $dump_path/$exp_name/$exp_id)
 
 ## data location / training objective
 --data_path  $OUTPATH                   # data location 
---lgs 'en-fr|en-de|de-fr'               # considered languages
+--lgs 'en-fr|en-de|de-fr'               # considered languages/meta-tasks
 --clm_steps ''                          # CLM objective
 --mlm_steps 'en,fr|en,de|de,fr'         # MLM objective
 
@@ -179,7 +178,7 @@ python train.py
 ## There are other parameters that are not specified here (see train.py).
 ```
 
-If parallel data is available for each task, the TLM objective can be used with `--mlm_steps 'en-fr|en-de|de-fr'`. To train with both the MLM and TLM objective for each task, you can use `--mlm_steps 'en,fr,en-fr|en,de,en-de|de,fr,de-fr'`. 
+If parallel data is available for each meta-task, the TLM objective can be used with `--mlm_steps 'en-fr|en-de|de-fr'`. To train with both the MLM and TLM objective for each meta-task, you can use `--mlm_steps 'en,fr,en-fr|en,de,en-de|de,fr,de-fr'`. 
 
 To [train with multiple GPUs](https://github.com/facebookresearch/XLM#how-can-i-run-experiments-on-multiple-gpus) use:
 ```
@@ -188,20 +187,20 @@ export NGPU=8; python -m torch.distributed.launch --nproc_per_node=$NGPU train.p
 
 **Tips**: Even when the validation perplexity plateaus, keep training your model. The larger the batch size the better (so using multiple GPUs will improve performance). Tuning the learning rate (e.g. [0.0001, 0.0002]) should help.
 
-#### 3. Train a (unsupervised/supervised) MT from a pretrained model
+#### 3. Train a (unsupervised/supervised) MT from a pretrained meta-model
 
 ```
 python train.py
 
 ## main parameters
 --exp_name meta_MT_enfrde                                     # experiment name
---exp_id maml
---dump_path ./dumped/                                         # where to store the experiment
+--exp_id maml                                                 # Experiment ID
+--dump_path ./dumped/                                         # where to store the experiment (the model will be stored in $dump_path/$exp_name/$exp_id)
 --reload_model '/dumped/mlm_enfrde/maml/best-valid_mlm_ppl.pth,/dumped/mlm_enfrde/maml/best-valid_mlm_ppl.pth'          
                                                               # model to reload for encoder,decoder
 ## data location / training objective
 --data_path $OUTPATH                                          # data location
---lgs 'en-fr|en-de|de-fr'                                     # considered languages
+--lgs 'en-fr|en-de|de-fr'                                     # considered languages/meta-tasks
 --ae_steps 'en,fr|en,de|de-fr'                                # denoising auto-encoder training steps
 --bt_steps 'en-fr-en,fr-en-fr|en-de-en,de-en-de|de-fr-de,fr-de-fr'    # back-translation steps
 --word_shuffle 3                                              # noise for auto-encoding loss
@@ -239,13 +238,13 @@ python train.py
 ## There are other parameters that are not specified here (see train.py).
 ```
     
-Above training is unsupervised. For a supervised nmt, add `--mt_steps en-fr,fr-en|en-de,de-en|de-fr,fr-de'` if parallel data is available.  
+Above training is unsupervised. For a supervised nmt, add `--mt_steps 'en-fr,fr-en|en-de,de-en|de-fr,fr-de'` if parallel data is available.  
 
-Here we have mentioned the objectives for each task. If you want to exclude a task in an objective, put a blank in its place. Suppose we want to exclude from `ae_steps 'en,fr|en,de|de-fr'` the task:
+Here we have mentioned the objectives for each meta-task. If you want to exclude a meta-task in an objective, put a blank in its place. Suppose we want to exclude from `ae_steps 'en,fr|en,de|de-fr` the meta-task:
 - en-de : `ae_steps 'en,fr||de-fr'` 
 - de-fr : `ae_steps 'en,fr|en,de|'`
 
-### Fine-tune the meta_model on a specific (sub) nmt task
+### Fine-tune the meta-model on a specific (sub) nmt (meta) task
 
 At this point, if your fine-tuning data did not come from the previous pre-processing, you can just prepare your txt data and call the script build_meta_data.sh with the (sub) task in question. Since the codes and vocabulary must be preserved, we have prepared another script ([build_fine_tune_data.sh](build_fine_tune_data.sh)) in which we directly apply BPE tokenization on dataset and binarize everything using preprocess.py based on the codes and vocabulary of the meta-model. So we have to call this script for each subtask like this :
 
@@ -271,7 +270,7 @@ OUTPATH=... # path where processed files will be stored
 mkdir -p $OUTPATH
 
 chmod +x $FASTBPE
-chmod +x build_meta_data.sh
+chmod +x build_fine_tune_data.sh
 chmod +x tools/mosesdecoder/scripts/tokenizer/*.perl
 
 # The n_sample parameter is optional, and when it is not passed or when it exceeds the dataset size, the whole dataset is considered
@@ -294,13 +293,12 @@ python train.py
 
 ## main parameters
 --exp_name meta_MT_enfr                                       # experiment name
---exp_id maml
---dump_path ./dumped/                                         # where to store the experiment
---reload_model '/dumped/meta_MT_enfrde/maml/todo.pth,/dumped/meta_MT_enfrde/maml/todo.pth'          
-                                                             # model to reload for encoder,decoder
+--exp_id maml                                                 # Experiment ID
+--dump_path ./dumped/                                         # where to store the experiment (the model will be stored in $dump_path/$exp_name/$exp_id)
+--reload_model '/dumped/meta_MT_enfrde/maml/todo.pth,/dumped/meta_MT_enfrde/maml/todo.pth'   # model to reload for encoder,decoder
 
 ## data location / training objective
---data_path $OUTPATH                                          # data location
+--data_path $OUTPATH/fine-tune                                # data location
 --lgs 'en-fr'                                                 # considered languages
 --ae_steps 'en,fr'                                            # denoising auto-encoder training steps
 --bt_steps 'en-fr-en,fr-en-fr'                                # back-translation steps
@@ -337,7 +335,7 @@ python train.py
 --remove_long_sentences_test False      # remove long sentences in test dataset
 ```
 
-Above training is unsupervised. For a supervised nmt, add `--mt_steps en-fr,fr-en'` if parallel data is available.
+Above training is unsupervised. For a supervised nmt, add `--mt_steps 'en-fr,fr-en'` if parallel data is available.
 
 ## References
 
