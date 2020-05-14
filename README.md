@@ -37,7 +37,7 @@ See [HowToTrainYourMAMLPytorch](https://github.com/AntreasAntoniou/HowToTrainYou
 
 #### 1. Preparing the data 
 
-At this level, if you have pre-processed binary data in pth format (for example from XLM experimentation or improvised by yourself), please group them in a specific folder that you will mention as a parameter by calling the script train.py.  
+At this level, if you have pre-processed binary data in pth format (for example from XLM experimentation or improvised by yourself), group them in a specific folder that you will mention as a parameter by calling the script train.py.  
 If this is not the case, we assume that you have txt files available for preprocessing. Look at the following example for which we have three translation tasks: English-French, German-English and German-French (see this [notebooks](notebooks/enfrde.ipynb) for details on the following).
 
 We have the following files available for preprocessing: 
