@@ -47,6 +47,7 @@ We have the following files available for preprocessing:
 
 All these files must be in the same folder (`PARA_PATH`).  
 You can also (and optionally) have monolingual data available (en.txt, de.txt and fr.txt; in `MONO_PATH` folder).  
+Parallel and monolingual data can all be in the same folder.
 
 [OPUS collections](http://opus.nlpl.eu/) is a good source of dataset. We illustrate in the [opus.sh](opus.sh) script how to download the data from opus and convert it to a text file.
 
@@ -284,7 +285,8 @@ n_samples=-1
 ./build_fine_tune_data.sh en-fr --n_samples $n_samples
 ```
 
-Let's consider the sub-task en-fr.
+Let's consider the sub-task en-fr.  
+At this stage you can use one of the two previously trained meta-models: pre-formed meta-model or meta-MT formed from the pre-formed meta-model. But here we use the second model, because we intuitively believe that it will be more efficient than the first one.
 
 Move to the `XLM` folder in advance.
 
