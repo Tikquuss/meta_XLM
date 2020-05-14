@@ -21,34 +21,34 @@ XLM supports multi-GPU and multi-node training, and contains code for:
 - [Moses](https://github.com/facebookresearch/XLM/tree/master/tools#tokenizers) (scripts to clean and tokenize text only - no installation required)
 - [Apex](https://github.com/nvidia/apex#quick-start) (for fp16 training)
 
-Look [facebookresearch/XLM](https://github.com/facebookresearch/XLM)
-
 ## II. Model-Agnostic Meta-Learning ([MAML](https://arxiv.org/abs/1911.02116))  
 
-Look [maml](https://github.com/cbfinn/maml), [learn2learn](https://github.com/learnables/learn2learn)...  
+See [maml](https://github.com/cbfinn/maml), [learn2learn](https://github.com/learnables/learn2learn)...  
 
-Look [HowToTrainYourMAMLPytorch](https://github.com/AntreasAntoniou/HowToTrainYourMAMLPytorch) for a replication of the paper ["How to train your MAML"](https://arxiv.org/abs/1810.09502), along with a replication of the original ["Model Agnostic Meta Learning"](https://arxiv.org/abs/1703.03400) (MAML) paper.
+See [HowToTrainYourMAMLPytorch](https://github.com/AntreasAntoniou/HowToTrainYourMAMLPytorch) for a replication of the paper ["How to train your MAML"](https://arxiv.org/abs/1810.09502), along with a replication of the original ["Model Agnostic Meta Learning"](https://arxiv.org/abs/1703.03400) (MAML) paper.
 
 ## III. XLM + MAML  
 
 ### Pretrained models
 
-##### todo
+##### not availble for the moment
 
 ### Train your own meta_model
 
 #### 1. Preparing the data
 
 At this level, if you have pre-processed binary data in pth format (for example from XLM experimentation or improvised by yourself), please group them in a specific folder that you will mention as a parameter by calling the script train.py.  
-If this is not the case, we assume that you have txt files available for preprocessing. Look at the following example for which we have three translation tasks: English-French, English-German and French-German.  
+If this is not the case, we assume that you have txt files available for preprocessing. Look at the following example for which we have three translation tasks: English-French, English-German and French-German(see this [notebooks](notebooks/enfrde.ipynb) for details on the following).
 
 We have the following files available for preprocessing: 
 - en-fr.en.txt and en-fr.fr.txt 
-- en-de.txt and en-de.txt in the 
-- fr-de.fr.txt and fr-de.de.txt 
+- en-de.en.txt and en-de.de.txt 
+- de-fr.de.txt and de-fr.fr.txt 
 
-All these files must be in the same folder.  
-You can also (and optionally) have monolingual data available (en.txt, de.txt and fr.txt in the same folder).
+All these files must be in the same folder (`PARA_PATH`).  
+You can also (and optionally) have monolingual data available (en.txt, de.txt and fr.txt; in the `MONO_PATH`).
+
+Move to the `XLM` folder in advance.
 
 ```
 PARA=True          # If parallel data is available and you need to preprocess it
@@ -57,11 +57,11 @@ MONO=True          # if you want to process monolingual data (if the monolingual
 PARA_PATH=...      # folder containing the parallel data
 MONO_PATH=...      # folder containing the monolingual data
 SAME_VOCAB=True    # whether all languages should share the same vocabulary (leave to True)
-nCodes=10000
-shuf_n_samples=1000000
-threads_for_tokenizer=16
-test_size=10       # Percentage of test data (%)
-val_size=10        # Percentage of valid data (%)
+nCodes=10000             # Learn nCodes BPE code on the training data
+shuf_n_samples=1000000   # Generating shuf_n_samples random permutations of training data to learn bpe
+threads_for_tokenizer=16 # It is preferable and advisable that it be the powers of two...
+test_size=10             # Percentage of test data (%)
+val_size=10              # Percentage of valid data (%)
 
 # tools paths
 TOKENIZE=tools/tokenize_our.sh
@@ -78,30 +78,39 @@ chmod +x build_meta_data.sh
 chmod +x tools/mosesdecoder/scripts/tokenizer/*.perl
 
 # The n_sample parameter is optional, and when it is not passed or when it exceeds the dataset size, the whole dataset is considered
+
 n_samples=-1
 
 # If you don't have any other data to fine-tune your model on a specific sub-task, specify the percentage of the sub-task metadata to consider or -1 to ignore it.
 
-sub_task_data=10,10,-1
-
-# transform (tokenize, lower and remove accent, loard code and vocab, apply BPE tokenization, binarize...) our data contained 
-# in the text files into a pth file understandable by the framework : takes a lot of time with dataset size, nCodes and shuf_n_samples
-
 sub_task=en-fr:10,en-de:-1,de-fr:1
+
+# Transform (tokenize, lower and remove accent, loard code and vocab, learn and apply BPE tokenization, binarize...) our data contained 
+# in the text files into a pth file understandable by the framework : takes a lot of time with dataset size, nCodes and shuf_n_samples
 
 ./build_meta_data.sh $sub_task $n_samples 
 ```
 
-After this you will have the following files in `$OUTPATH` :  
+After this you will have the following (necessary) files in `$OUTPATH` (and `$OUTPATH/fine_tune` on request):  
 
 ```
-TODO
-```
-
-For fine-tune, in `$OUTPATH/fine_tune` :
-
-```
-TODO
+- monolingual data :
+    - training data   : train.fr.pth, train.en.pth and train.de.pth
+    - test data       : test.fr.pth, test.en.pth and test.de.pth
+    - validation data : valid.fr.pth, valid.en.pth and valid.de.pth
+- parallel data :
+    - training data : 
+        - train.en-fr.en.pth and train.en-fr.fr.pth 
+        - train.en-de.en.pth and train.en-de.de.pth
+        - train.de-fr.de.pth and train.de-fr.fr.pth 
+    - test data :
+        - test.en-fr.en.pth and test.en-fr.fr.pth 
+        - test.en-de.en.pth and test.en-de.de.pth
+        - test.de-fr.de.pth and test.de-fr.fr.pth 
+    - validation data
+        - valid.en-fr.en.pth and valid.en-fr.fr.pth 
+        - valid.en-de.en.pth and valid.en-de.de.pth
+        - valid.de-fr.de.pth and valid.de-fr.fr.pth 
 ```
 
 #### 2. Pretrain a language model

@@ -24,6 +24,7 @@ fi
 sub_tasks=""
 fine_tune_data_percent=""
 
+# For each task we have $language_pair:fine_tune_data_percent. We separate the two.
 for task_data_percent in $(echo $SUB_TASKS_DATA_PERCENT | sed -e 's/\,/ /g'); do
     IFS=': ' read -r -a array <<< "$task_data_percent"
     sub_tasks=$sub_tasks,${array[0]}
@@ -40,7 +41,11 @@ if [ $sub_tasks = "" ];then
 fi
 
 if [ $fine_tune_data_percent != "" ];then
-    mkdir $OUTPATH/fine_tune
+    if [ ! -d $OUTPATH/fine_tune ]; then
+        mkdir $OUTPATH/fine_tune
+    else
+        echo "dir $OUTPATH/fine_tune already exists"
+    fi
 fi
 
 # 5) if PARA = False && MONO = False : stop and report an error
@@ -67,15 +72,20 @@ chmod +x $TOKENIZE
 
 # usage : get_n_samples input_file n_samples output_file
 get_n_samples() {
+    get_seeded_random() {
+        seed="$1"; openssl enc -aes-256-ctr -pass pass:"$seed" -nosalt </dev/zero 2>/dev/null
+    };
     NLINES=`wc -l $1  | awk -F " " '{print $1}'`;
     NLINES=$(($NLINES+1));
     if [ $NLINES -le $2 ]; then
       cp $1 $3
     else
       NTAIL=$(($2/2));
-      NHEAD=$(($2 - NTAIL));
-      head -n $NHEAD $1 > $3;
-      tail -n $NTAIL $1 >> $3;
+      NHEAD=$(($2 - $NTAIL));
+      #head -n $NHEAD $1 > $3;
+      #tail -n $NTAIL $1 >> $3;
+      shuf --random-source=<(get_seeded_random 42) $1 | head $NHEAD   > $3;
+      shuf --random-source=<(get_seeded_random 42) $1 | tail $NTAIL   >> $3;
     fi
 }
 
@@ -91,6 +101,7 @@ if [ $PARA = "True" ]; then
                 else
                     get_n_samples $PARA_PATH/$pair.$lg.txt $N_SAMPLES $PARA_PATH/samples.$pair.$lg
                     cat $PARA_PATH/samples.$pair.$lg | $TOKENIZE $lg $threads_for_tokenizer | python $LOWER_REMOVE_ACCENT > $PARA_PATH/$pair.$lg.all 
+                    # todo : memory
                     rm $PARA_PATH/${pair}/samples.$pair.$lg
                 fi
                 echo "*** Tokenized (+ lowercase + accent-removal) $pair.$lg data to $PARA_PATH/? ***"
@@ -101,35 +112,6 @@ if [ $PARA = "True" ]; then
         done
     done
 fi
-
-# todo : 
-get_seeded_random() {
-    seed="$1"; openssl enc -aes-256-ctr -pass pass:"$seed" -nosalt </dev/zero 2>/dev/null
-};
-forEach pair, data_percent in zip($sub_tasks, $fine_tune_data_percent):
-    if good data_percent :
-        for lg in $(echo $pair | sed -e 's/\-/ /g'); do
-            NLINES=`wc -l $PARA_PATH/$pair.$lg.all  | awk -F " " '{print $PARA_PATH/$pair.$lg.all}'`;
-            NLINES=$(($NLINES+1));
-            N_FINE_TUNE=$(((NLINES*$data_percent)/100))
-            if [ $NLINES -le $N_FINE_TUNE ]; then
-                # todo : exit
-                echo "error"
-            else
-                NTAIL=$(($N_FINE_TUNE/2));
-                NHEAD=$(($N_FINE_TUNE - NTAIL)); 
-                NREST=$((NLINES - $NTAIL - $NHEAD));
-                shuf --random-source=<(get_seeded_random 42) $1 | head -$NTRAIN                           > $2;
-                shuf --random-source=<(get_seeded_random 42) $1 | head -$(($NTRAIN+$NVAL)) | tail -$NVAL  > $3;
-                shuf --random-source=<(get_seeded_random 42) $1 | tail -$NTEST                            > $4;
-                head -n $NHEAD $PARA_PATH/$pair.$lg.all > $OUTPATH/fine_tune/$pair.$lg.all;
-                tail -n $NTAIL $PARA_PATH/$pair.$lg.all >> $OUTPATH/fine_tune/$pair.$lg.all;
-            supprimer $PARA_PATH/$pair.$lg.all??
-        done
-    else :
-        for lg in $(echo $pair | sed -e 's/\-/ /g'); do
-            rename $PARA_PATH/$pair.$lg.all?? en $PARA_PATH/$pair.$lg.all
-        done
 
 # mono data 
 # if MONO = True &&  MONO_PATH exist
@@ -142,6 +124,7 @@ if [ $MONO = "True" ] && [ -d $MONO_PATH ]; then
                 else
                     get_n_samples $MONO_PATH/$lg.txt $N_SAMPLES $MONO_PATH/samples.$lg
                     cat $MONO_PATH/samples.$lg | $TOKENIZE $lg $threads_for_tokenizer | python $LOWER_REMOVE_ACCENT > $MONO_PATH/$lg.all 
+                    # todo : memory
                     rm $MONO_PATH/samples.$lg
                 fi
                 echo "*** Tokenized (+ lowercase + accent-removal) $lg data to $MONO_PATH/? ***"
@@ -153,8 +136,6 @@ if [ $MONO = "True" ] && [ -d $MONO_PATH ]; then
     done
 fi
 
-# meme todo que plus haut si necessaire
-
 # Let's take the case $pair = "en-fr"
 # At this point we have for this pair the following files:
 # if PARA = True && PARA_PATH exists, in $PARA_PATH: en-en.en.all and en-en.fr.all
@@ -163,6 +144,8 @@ fi
 #
 # split into train / valid / test
 #
+echo -e "\n"
+echo "*** split into train / valid / test ***"
 split_data() {
     get_seeded_random() {
         seed="$1"; openssl enc -aes-256-ctr -pass pass:"$seed" -nosalt </dev/zero 2>/dev/null
@@ -172,6 +155,9 @@ split_data() {
     NTEST=$(((NLINES*$5)/100));
     NVAL=$(((NLINES*$6)/100));
     NTRAIN=$((NLINES - $NVAL - $NTEST));
+    # todo : correct this error. But the code works with it.
+    # shuf: write error
+    # shuf: write error: Broken pipe
     shuf --random-source=<(get_seeded_random 42) $1 | head -$NTRAIN                           > $2;
     shuf --random-source=<(get_seeded_random 42) $1 | head -$(($NTRAIN+$NVAL)) | tail -$NVAL  > $3;
     shuf --random-source=<(get_seeded_random 42) $1 | tail -$NTEST                            > $4;
@@ -208,46 +194,76 @@ fi
 # monolingua corpora.
 # 
 
+echo -e "\n\n"
 echo "***build the training set for BPE tokenization ($nCodes codes)***"
 
-# Je ne gère que le cas SAME_VOCAB = True pour l'instant
+# I'm only handling the case SAME_VOCAB = True for now
+
+echo -e "\n"
+echo "***shuf ... Generating $shuf_n_samples random permutations of training data and store result in $OUTPATH/${pair}/bpe.train***"
 
 # para 
 # if PARA = True (then PARA_PATH must exist)
-if [ $PARA = "True" ]; then
-    for pair in $(echo $sub_tasks | sed -e 's/\,/ /g'); do
-        for lg in $(echo $pair | sed -e 's/\-/ /g'); do
-            shuf -r -n $shuf_n_samples $PARA_PATH/$pair.$lg.train >> $OUTPATH/bpe.train
+
+if [ ! -f $OUTPATH/bpe.train ]; then
+    if [ $PARA = "True" ]; then
+        for pair in $(echo $sub_tasks | sed -e 's/\,/ /g'); do
+            for lg in $(echo $pair | sed -e 's/\-/ /g'); do
+                shuf -r -n $shuf_n_samples $PARA_PATH/$pair.$lg.train >> $OUTPATH/bpe.train
+            done
         done
-    done
+    fi
+
+    # mono
+    # if MONO = True &&  MONO_PATH exist
+    if [ $MONO = "True" ] && [ -d $MONO_PATH ]; then
+        for pair in $(echo $sub_tasks | sed -e 's/\,/ /g'); do
+            for lg in $(echo $pair | sed -e 's/\-/ /g'); do
+                shuf -r -n $shuf_n_samples $MONO_PATH/$lg.train >> $OUTPATH/bpe.train
+            done
+        done
+    fi
+else
+    #rm $OUTPATH/bpe.train
+    echo "file $OUTPATH/bpe.train already exists"
 fi
 
-# mono
-# if MONO = True &&  MONO_PATH exist
-if [ $MONO = "True" ] && [ -d $MONO_PATH ]; then
-    for pair in $(echo $sub_tasks | sed -e 's/\,/ /g'); do
-        for lg in $(echo $pair | sed -e 's/\-/ /g'); do
-            shuf -r -n $shuf_n_samples $MONO_PATH/$lg.train >> $OUTPATH/bpe.train
-        done
-    done
+echo -e "\n"
+echo "***Learn the BPE vocabulary on the training set : $OUTPATH/bpe.train ...***"
+if [ ! -f $OUTPATH/codes ]; then
+     $FASTBPE learnbpe $nCodes $OUTPATH/bpe.train > $OUTPATH/codes
+else
+    #rm $OUTPATH/codes
+    echo "file $OUTPATH/codes already exists"
 fi
 
-echo "***Learn the BPE vocabulary on the training set : $OUTPATH/bpe.train***"
-$FASTBPE learnbpe $nCodes $OUTPATH/bpe.train > $OUTPATH/codes
+echo "***Learn $nCodes BPE code on the bpe.train file***" 
 
+echo -e "\n"
 echo "***Get the post-BPE vocab***"
-$FASTBPE applybpe $OUTPATH/train $OUTPATH/bpe.train $OUTPATH/codes 
-cat $OUTPATH/train | $FASTBPE getvocab - > $OUTPATH/vocab 
-echo "***Learn the $nCodes BPE code on the bpe.train file***" 
+if [ ! -f $OUTPATH/train ]; then
+    $FASTBPE applybpe $OUTPATH/train $OUTPATH/bpe.train $OUTPATH/codes
+else
+    #rm $OUTPATH/train
+    echo "file $OUTPATH/train already exists"
+fi
 
-echo "***Apply BPE tokenization on the monolingual and parallel corpora, and binarize everything using preprocess.py.***"
+if [ ! -f $OUTPATH/vocab ]; then
+    cat $OUTPATH/train | $FASTBPE getvocab - > $OUTPATH/vocab
+else
+    #rm $OUTPATH/vocab
+    echo "file $OUTPATH/vocab already exists"
+fi
+  
+echo -e "\n"
+echo "***Apply BPE tokenization on the parallel corpora.***"
+
 # if PARA = True (then PARA_PATH must exist)
 if [ $PARA = "True" ]; then
     for pair in $(echo $sub_tasks | sed -e 's/\,/ /g'); do
         for lg in $(echo $pair | sed -e 's/\-/ /g'); do
             for split in train valid test; do
                 $FASTBPE applybpe $OUTPATH/$pair.$lg.$split $PARA_PATH/$pair.$lg.$split $OUTPATH/codes
-                python preprocess.py $OUTPATH/vocab $OUTPATH/$pair.$lg.$split
             done
         done
     done
@@ -269,20 +285,135 @@ if [ $MONO = "True" ] && [ -d $MONO_PATH ]; then
                         done
                     done
                 fi
-                python preprocess.py $OUTPATH/vocab $OUTPATH/$split.$lg
             done
         done
     done
 fi
 
-# if MONO = True && MONO_PATH does not exist && PARA_PATH exists
-if [ $MONO = "True" ] && [ ! -d $MONO_PATH ] && [ ! -d $PARA_PATH ]; then
-    # We use our parallel data to construct the monolingual data 
+echo -e "\n"
+echo "***Build fine_tune data***"
+
+# Usage : build_fine_tune_data $sub_tasks $fine_tune_data_percent 
+build_fine_tune_data() {
+    get_seeded_random() {
+        seed="$1"; openssl enc -aes-256-ctr -pass pass:"$seed" -nosalt </dev/zero 2>/dev/null
+    };
+    
+    IFS=', ' read -r -a array1 <<< "$1"
+    IFS=', ' read -r -a array2 <<< "$2"
+
+    for (( i=0; i<${#array1[*]}; ++i)); do 
+        data_percent=${array2[$i]}
+        if [ $data_percent != "" ] && [ $data_percent -gt 0 ] ;then
+            pair=${array1[$i]}
+            for lg in $(echo $pair | sed -e 's/\-/ /g'); do
+                for split in train valid test; do
+                    # PARA
+                    name=$OUTPATH/$pair.$lg.$split
+                    # todo : fix this error that prevents the creation of refining files
+                    # ../build_meta_data.sh: line 315: 4001 data/enfrde/processed/en-fr.en.train+1: syntax error 
+                    # in expression (error token is "data/enfrde/processed/en-fr.en.train+1")
+                    NLINES=`wc -l $name  | awk -F " " '{print $name}'`;
+                    NLINES=$(($NLINES+1));
+                    N_FINE_TUNE=$(((NLINES*$data_percent)/100))
+                    if [ $NLINES -le $N_FINE_TUNE ]; then
+                        # todo : exit
+                        echo "error"
+                    else
+                        NREST=$((NLINES - $N_FINE_TUNE));
+                        mv $OUTPATH/$pair.$lg.$split $OUTPATH/$pair.$lg.$split.tmp
+                        shuf --random-source=<(get_seeded_random 42) $OUTPATH/$pair.$lg.$split.tmp | head -$NREST > $OUTPATH/$pair.$lg.$split;
+                        shuf --random-source=<(get_seeded_random 42) $OUTPATH/$pair.$lg.$split.tmp | tail -$N_FINE_TUNE > $OUTPATH/fine_tune/$pair.$lg.$split;
+                        # todo : memory
+                        rm $OUTPATH/$pair.$lg.$split.tmp
+                    fi
+
+                    # MONO
+                    name=$OUTPATH/$split.$lg
+                    NLINES=`wc -l $name | awk -F " " '{print $name}'`;
+                    NLINES=$(($NLINES+1));
+                    N_FINE_TUNE=$(((NLINES*$data_percent)/100))
+                    if [ $NLINES -le $N_FINE_TUNE ]; then
+                        # todo : exit
+                        echo "error"
+                    else
+                        NREST=$((NLINES - $N_FINE_TUNE));
+                        rm $OUTPATH/$split.$lg $OUTPATH/$split.$lg.tmp
+                        shuf --random-source=<(get_seeded_random 42) $OUTPATH/$split.$lg.tmp | head -$NREST > $OUTPATH/$split.$lg; 
+                        shuf --random-source=<(get_seeded_random 42) $OUTPATH/$split.$lg.tmp | tail -$N_FINE_TUNE > $MONO_PATH/fine_tune/$split.$lg;
+                        # todo : memory
+                        rm $OUTPATH/$split.$lg.tmp
+                    fi
+                done
+            done
+        fi
+    done
+}
+
+build_fine_tune_data $sub_tasks $fine_tune_data_percent
+
+echo -e "\n"
+echo "***Binarize everything using preprocess.py.***"
+
+# if PARA = True (then PARA_PATH must exist)
+if [ $PARA = "True" ]; then
     for pair in $(echo $sub_tasks | sed -e 's/\,/ /g'); do
         for lg in $(echo $pair | sed -e 's/\-/ /g'); do
             for split in train valid test; do
-                cp $OUTPATH/$pair.$lg.$split.pth $OUTPATH/$split.$lg.pth
+                python preprocess.py $OUTPATH/vocab $OUTPATH/$pair.$lg.$split
+                if [ -f $OUTPATH/fine_tune/$pair.$lg.$split ]; then
+                    python preprocess.py $OUTPATH/vocab $OUTPATH/fine_tune/$pair.$lg.$split
+                fi
             done
         done
     done
 fi
+
+# mono
+# if MONO = True &&  MONO_PATH exist
+if [ $MONO = "True" ] && [ -d $MONO_PATH ]; then
+    for pair in $(echo $sub_tasks | sed -e 's/\,/ /g'); do
+        for lg in $(echo $pair | sed -e 's/\-/ /g'); do
+            for split in train valid test; do
+                python preprocess.py $OUTPATH/vocab $OUTPATH/$split.$lg
+                if [ -f $OUTPATH/fine_tune/$split.$lg ]; then
+                    python preprocess.py $OUTPATH/vocab $OUTPATH/fine_tune/$split.$lg
+                fi
+            done
+        done
+    done
+fi
+
+
+# if MONO = True && MONO_PATH does not exist && PARA_PATH exists
+if [ $MONO = "True" ] && [ ! -d $MONO_PATH ] && [ ! -d $PARA_PATH ]; then
+    # We use our parallel data to construct the monolingual data 
+    echo -e "\n"
+    echo "***Using parallel data to construct monolingual data***"
+    for pair in $(echo $sub_tasks | sed -e 's/\,/ /g'); do
+        for lg in $(echo $pair | sed -e 's/\-/ /g'); do
+            for split in train valid test; do
+                cp $OUTPATH/$pair.$lg.$split.pth $OUTPATH/$split.$lg.pth
+                if [ -f $OUTPATH/fine_tune/$pair.$lg.$split.pth ]; then
+                    cp $OUTPATH/fine_tune/$pair.$lg.$split.pth $OUTPATH/fine_tune/$split.$lg.pth
+                fi  
+            done
+        done
+    done
+fi
+
+echo -e "\n"
+echo "***Creat the file to train the XLM model with MLM+TLM objective***"
+for pair in $(echo $sub_tasks | sed -e 's/\,/ /g'); do
+    for lg in $(echo $pair | sed -e 's/\-/ /g'); do
+        for split in train valid test; do
+            cp $OUTPATH/$pair.$lg.$split.pth $OUTPATH/$split.$pair.$lg.pth
+            if [ -f $OUTPATH/fine_tune/$pair.$lg.$split.pth ]; then
+                cp $OUTPATH/fine_tune/$pair.$lg.$split.pth $OUTPATH/fine_tune/$split.$pair.$lg.pth
+            fi    
+        done
+    done
+done
+
+echo -e "\n"
+echo "*** build data with succes : dir $OUTPATH ***"
