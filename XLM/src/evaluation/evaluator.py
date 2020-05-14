@@ -14,13 +14,12 @@ import torch
 
 from ..utils import to_cuda, restore_segmentation, concat_batches
 from ..model.memory import HashingMemory
-# our
-from ..trainer import get_data_key
-
 
 BLEU_SCRIPT_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'multi-bleu.perl')
 assert os.path.isfile(BLEU_SCRIPT_PATH)
 
+# our
+import copy
 
 logger = getLogger()
 
@@ -110,8 +109,8 @@ class Evaluator(object):
         params = self.params
         data = self.data
         if data_key :
-            params = self.params.meta_params[data_key]
-            data = data[data_key]
+            params = copy.deepcopy(self.params.meta_params[data_key])
+            data = copy.deepcopy(data[data_key])
         
         assert data_set in ['valid', 'test']
         assert lang1 in params.langs
@@ -250,7 +249,7 @@ class Evaluator(object):
         """
         params = self.params
         if data_key :
-            params = self.params.meta_params[data_key]
+            params = copy.deepcopy(self.params.meta_params[data_key])
             # todo
             params.pred_probs = self.params.pred_probs
             
@@ -357,8 +356,6 @@ class Evaluator(object):
                         if len(_mlm_mono) > 0:
                             scores[data_key]['%s_mlm_ppl' % data_set] = np.mean([scores[data_key]['%s_%s_mlm_ppl' % (data_set, lang)] for lang in _mlm_mono])
                             scores[data_key]['%s_mlm_acc' % data_set] = np.mean([scores[data_key]['%s_%s_mlm_acc' % (data_set, lang)] for lang in _mlm_mono])
-                    scores['%s_mt_ppl' % data_set] = np.mean([scores[data_key]['%s_%s__mt_ppl' % (data_set, data_key)] for data_key in params.meta_params.keys()])
-                    scores['%s_mt_ppl' % data_set] = np.mean([scores[data_key]['%s_%s__mt_ppl' % (data_set, data_key)] for data_key in params.meta_params.keys()])
                     
         if params.meta_learning :
             for data_set in ['valid', 'test'] :
@@ -370,11 +367,15 @@ class Evaluator(object):
             for data_set in ['valid', 'test'] :
                 # todo todo : Right now I'm averaging the values for each task. 
                 # Do a study later to see how to weight the coefficients of this average (average weighted by the coefficients not all equal). 
-                scores['%s_mt_ppl'  % data_set] = np.mean([scores[data_key]['task_%s_%s_mt_ppl' % (data_key, data_set)] for data_key in params.meta_params.keys()])
-                scores['%s_mt_acc'  % data_set] = np.mean([scores[data_key]['task_%s_%s_mt_acc' % (data_key, data_set)] for data_key in params.meta_params.keys()])
-                scores['%s_mt_bleu' % data_set] = np.mean([scores[data_key]['task_%s_%s_mt_bleu' % (data_key, data_set)] for data_key in params.meta_params.keys()])
-                
-                    
+                for value in ['ppl', 'acc', 'bleu'] :
+                    scores['%s_mt_%s' % (data_set, value)] = np.mean([scores[data_key]['task_%s_%s_mt_%s' % (data_key, data_set, value)] for data_key in params.meta_params.keys()])
+               
+              
+            # todo : correct the NaN
+            for data_set in ['valid', 'test'] :
+                for value in ['ppl', 'acc', 'bleu'] :
+                    if scores['%s_mt_%s' % (data_set, value)] == np.nan : 
+                        scores['%s_mt_%s' % (data_set, value)] = 1
                     
         return scores
 
@@ -385,7 +386,7 @@ class Evaluator(object):
         # our
         params = self.params
         if data_key :
-            params = self.params.meta_params[data_key]
+            params = copy.deepcopy(self.params.meta_params[data_key])
             # todo ??
             params.multi_gpu = self.params.multi_gpu
         
@@ -463,7 +464,7 @@ class Evaluator(object):
         """
         params = self.params
         if data_key :
-            params = self.params.meta_params[data_key]
+            params = copy.deepcopy(self.params.meta_params[data_key])
             # todo ??
             params.multi_gpu = self.params.multi_gpu
             
@@ -564,7 +565,7 @@ class EncDecEvaluator(Evaluator):
         # our
         params = self.params
         if data_key :
-            params = self.params.meta_params[data_key]
+            params = copy.deepcopy(self.params.meta_params[data_key])
             # todo ??
             params.multi_gpu = self.params.multi_gpu
             params.hyp_path = self.params.hyp_path

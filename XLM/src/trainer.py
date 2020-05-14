@@ -29,17 +29,6 @@ from .model.transformer import TransformerFFN
 
 logger = getLogger()
 
-# our
-def get_data_key(params, langs=[]):
-    """
-    In the case of meta-learning, we have a (meta-)data dictionary for each (meta-)task, 
-    so the keys are the languages conserved by the task. 
-    This method allows to return the corresponding meta-dataset for a given meta-pair of language.
-    """
-    for lgs in params.lgs :
-        for lang in langs :
-            if lang in lgs.split("-"):
-                return lgs
 
 class Trainer(object):
 
@@ -369,7 +358,8 @@ class Trainer(object):
         # our
         data = self.data
         if data_key :
-            data = data[data_key]
+            data = copy.deepcopy(data[data_key])
+            
             
         logger.info("Creating new training data iterator (%s) ..." % ','.join([str(x) for x in [iter_name, lang1, lang2] if x is not None]))
         assert stream or not self.params.use_memory or not self.params.mem_query_batchnorm
@@ -401,8 +391,8 @@ class Trainer(object):
         # our
         params = self.params
         if data_key :
-            params = self.params.meta_params[data_key]
-        
+            params = copy.deepcopy(self.params.meta_params[data_key])
+             
         assert lang1 in params.langs
         assert lang2 is None or lang2 in params.langs
         assert stream is False or lang2 is None
@@ -479,7 +469,11 @@ class Trainer(object):
         # our
         params = self.params
         if data_key :
-            params = self.params.meta_params[data_key]
+            params = copy.deepcopy(self.params.meta_params[data_key])
+            try :
+                params.mask_index = self.params.mask_index
+            except :
+                pass
         
         if params.word_blank == 0:
             return x, l
@@ -523,7 +517,7 @@ class Trainer(object):
         # our
         params = self.params
         if data_key :
-            params = self.params.meta_params[data_key]
+            params = copy.deepcopy(self.params.meta_params[data_key])
             # todo
             params.pred_probs = self.params.pred_probs
         else :
@@ -587,7 +581,7 @@ class Trainer(object):
         # our
         params = self.params
         if data_key :
-            params = self.params.meta_params[data_key]
+            params = copy.deepcopy(self.params.meta_params[data_key])
         
         lang1_id = params.lang2id[lang1]
         lang2_id = params.lang2id[lang2] if lang2 is not None else None
@@ -819,8 +813,6 @@ class Trainer(object):
             # equivalent to "for task in list of task" in the original algorithm
             for lang1, lang2, data_key in zip(lang1, lang2, data_keys) :
                 
-                #data_key = get_data_key(params, langs=[lang1, lang2])
-                
                 assert data_key, "Invalid data_key : can't be None"
                 assert self.data[data_key], "Invalid data_key : " + str(data_key) 
                 
@@ -918,8 +910,6 @@ class Trainer(object):
             
             # equivalent to "for task in list of task" in the original algorithm
             for lang1, lang2, data_key in zip(lang1, lang2, data_keys) :
-                
-                #data_key = get_data_key(params, langs=[lang1, lang2])
                 
                 assert data_key, "Invalid data_key : can't be None"
                 assert self.data[data_key], "Invalid data_key : " + str(data_key) 
@@ -1030,8 +1020,6 @@ class Trainer(object):
             
             # equivalent to "for task in list of task" in the original algorithm
             for lang1, lang2, data_key in zip(lang1, lang2, data_keys) :
-                
-                #data_key = get_data_key(params, langs=[lang1, lang2])
                 
                 assert data_key, "Invalid data_key : can't be None"
                 assert self.data[data_key], "Invalid data_key : " + str(data_key) 
@@ -1190,8 +1178,6 @@ class EncDecTrainer(Trainer):
             # equivalent to "for task in list of task" in the original algorithm
             for lang1, lang2, data_key in zip(lang1, lang2, data_keys) :
                 
-                #data_key = get_data_key(params, langs=[lang1, lang2])
-                
                 assert data_key, "Invalid data_key : can't be None"
                 assert self.data[data_key], "Invalid data_key : " + str(data_key) 
                 
@@ -1334,8 +1320,6 @@ class EncDecTrainer(Trainer):
             
             # equivalent to "for task in list of task" in the original algorithm
             for lang1, lang2, lang3, data_key in zip(lang1, lang2, lang3, data_keys) :
-                
-                #data_key = get_data_key(params, langs=[lang1, lang2, lang3])
                 
                 assert data_key, "Invalid data_key : can't be None"
                 assert self.data[data_key], "Invalid data_key : " + str(data_key) 

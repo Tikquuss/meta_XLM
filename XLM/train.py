@@ -437,6 +437,10 @@ def main(params):
                 for k, v in scores[lgs].items():
                     if k != "epoch":
                         logger.info("%s -> %.6f" % (k, v))
+            logger.info("============ all")
+            for k, v in scores.items():
+                if not (k in (list(params.meta_params.keys())+['epoch'])) :
+                    logger.info("%s -> %.6f" % (k, v))
                 
         if params.is_master:
             logger.info("__log__:%s" % json.dumps(scores))
@@ -444,7 +448,7 @@ def main(params):
         # end of epoch
         trainer.save_best_model(scores)
         trainer.save_periodic()
-        #trainer.end_epoch(scores)
+        trainer.end_epoch(scores)
         
         # our
         logger.info("============ garbage collector collecting %d ..." % gc.collect())
