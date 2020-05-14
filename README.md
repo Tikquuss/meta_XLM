@@ -38,16 +38,19 @@ See [HowToTrainYourMAMLPytorch](https://github.com/AntreasAntoniou/HowToTrainYou
 #### 1. Preparing the data 
 
 At this level, if you have pre-processed binary data in pth format (for example from XLM experimentation or improvised by yourself), please group them in a specific folder that you will mention as a parameter by calling the script train.py.  
-If this is not the case, we assume that you have txt files available for preprocessing. Look at the following example for which we have three translation tasks: English-French, English-German and French-German(see this [notebooks](notebooks/enfrde.ipynb) for details on the following).
+If this is not the case, we assume that you have txt files available for preprocessing. Look at the following example for which we have three translation tasks: English-French, German-English and German-French (see this [notebooks](notebooks/enfrde.ipynb) for details on the following).
 
 We have the following files available for preprocessing: 
 - en-fr.en.txt and en-fr.fr.txt 
-- en-de.en.txt and en-de.de.txt 
+- de-en.de.txt and de-en.en.txt 
 - de-fr.de.txt and de-fr.fr.txt 
 
 All these files must be in the same folder (`PARA_PATH`).  
 You can also (and optionally) have monolingual data available (en.txt, de.txt and fr.txt; in `MONO_PATH` folder).  
 Parallel and monolingual data can all be in the same folder.
+
+Note : Languages must be submitted in alphabetical order (de-en and not en-de, fr-ru and not ru-fr ...). If you submit them in any order you will have problems loading data during training, because when you run the [train.py](XLM/train.py) script the parameters like the language pair are put back in alphabetical order before being processed.  
+Don't worry about this restriction, XLM for MT is naturally trained to translate sentences in both directions. See [translate.py](translate.py).
 
 [OPUS collections](http://opus.nlpl.eu/) is a good source of dataset. We illustrate in the [opus.sh](opus.sh) script how to download the data from opus and convert it to a text file.  
 Another source for other_languages-english data is [anki Tab-delimited Bilingual Sentence Pairs](http://www.manythings.org/anki/). Simply download the .zip file, unzip to extract the other_language.txt file. This file usually contains data in the form of `sentence_en sentence_other_language other_information' on each line. You have to make your own extraction script in two files : en-ol.en.txt and en-ol.ol.txt with ol=other_language.
@@ -96,7 +99,7 @@ n_samples=-1
 
 # If you don't have any other data to fine-tune your model on a specific sub-task, specify the percentage of the sub-task metadata to consider or -1 to ignore it.
 
-sub_task=en-fr:10,en-de:-1,de-fr:-1
+sub_task=en-fr:10,de-en:-1,de-fr:-1
 
 # Transform (tokenize, lower and remove accent, loard code and vocab, learn and apply BPE tokenization, binarize...) our data contained 
 # in the text files into a pth file understandable by the framework : takes a lot of time with dataset size, nCodes and shuf_n_samples
@@ -116,15 +119,15 @@ After this you will have the following (necessary) files in `$OUTPATH` (and `$OU
 - parallel data :
     - training data : 
         - train.en-fr.en.pth and train.en-fr.fr.pth 
-        - train.en-de.en.pth and train.en-de.de.pth
+        - train.de-en.en.pth and train.de-en.de.pth
         - train.de-fr.de.pth and train.de-fr.fr.pth 
     - test data :
         - test.en-fr.en.pth and test.en-fr.fr.pth 
-        - test.en-de.en.pth and test.en-de.de.pth
+        - test.de-en.en.pth and test.de-en.de.pth
         - test.de-fr.de.pth and test.de-fr.fr.pth 
     - validation data
         - valid.en-fr.en.pth and valid.en-fr.fr.pth 
-        - valid.en-de.en.pth and valid.en-de.de.pth
+        - valid.de-en.en.pth and valid.de-en.de.pth
         - valid.de-fr.de.pth and valid.de-fr.fr.pth 
  - code and vocab
 ```
@@ -230,8 +233,8 @@ python train.py
 --optimizer adam_inverse_sqrt,beta1=0.9,beta2=0.98,lr=0.0001  # optimizer
 --epoch_size 200000                                           # number of sentences per epoch
 --eval_bleu true                                              # also evaluate the BLEU score
---stopping_criterion 'valid todo todo todo,10'                 # validation metric (when to save the best model)
---validation_metrics 'valid todo todo todo'                    # end experiment if stopping criterion does not improve
+--stopping_criterion 'valid_mt_bleu,10'                       # validation metric (when to save the best model)
+--validation_metrics 'valid_mt_bleu'                          # end experiment if stopping criterion does not improve
 
 ## dataset
 --train_n_samples -1                    # Just consider train_n_sample train data
@@ -304,7 +307,7 @@ python train.py
 --exp_name meta_MT_enfr                                       # experiment name
 --exp_id maml                                                 # Experiment ID
 --dump_path ./dumped/                                         # where to store the experiment (the model will be stored in $dump_path/$exp_name/$exp_id)
---reload_model 'dumped/meta_MT_enfrde/maml/todo.pth,dumped/meta_MT_enfrde/maml/todo.pth'   # model to reload for encoder,decoder
+--reload_model 'dumped/meta_MT_enfrde/maml/best-valid_mt_bleu.pth,dumped/meta_MT_enfrde/maml/best-valid_mt_bleu.pth'   # model to reload for encoder,decoder
 
 ## data location / training objective
 --data_path $OUTPATH/fine-tune                                # data location

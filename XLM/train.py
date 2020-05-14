@@ -423,24 +423,31 @@ def main(params):
                     trainer.iter()  
                         
         logger.info("============ End of epoch %i ============" % trainer.epoch)
-
+        
         # evaluate perplexity
         scores = evaluator.run_all_evals(trainer)
-       
+        
         # print / JSON log
-        for k, v in scores.items():
-            
-            logger.info("%s -> %.6f" % (k, v))
+        if not params.meta_learning :
+            for k, v in scores.items():
+                logger.info("%s -> %.6f" % (k, v))
+        else :
+            for lgs in params.meta_params.keys() :
+                logger.info("============ task : %s " % lgs)
+                for k, v in scores[lgs].items():
+                    if k != "epoch":
+                        logger.info("%s -> %.6f" % (k, v))
+                
         if params.is_master:
             logger.info("__log__:%s" % json.dumps(scores))
 
         # end of epoch
         trainer.save_best_model(scores)
         trainer.save_periodic()
-        trainer.end_epoch(scores)
+        #trainer.end_epoch(scores)
         
         # our
-        logger.info("============= garbage collector collecting %d ..." % gc.collect())
+        logger.info("============ garbage collector collecting %d ..." % gc.collect())
         
 
 
