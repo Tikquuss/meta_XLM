@@ -13,6 +13,9 @@ import torch
 from .dataset import StreamDataset, Dataset, ParallelDataset
 from .dictionary import BOS_WORD, EOS_WORD, PAD_WORD, UNK_WORD, MASK_WORD
 
+# our
+import copy
+
 
 logger = getLogger()
 
@@ -106,14 +109,6 @@ def load_mono_data(params, data):
     Load monolingual data.
     """
 
-    def getEpochSize(a, b):
-        "Find the multiple of b closest to a by greater than a, and divide it by b."
-        i = a
-        while True :
-            if i%b == 0 :
-                return i//b
-            i = i + 1
-
     data['mono'] = {}
     data['mono_stream'] = {}
 
@@ -139,32 +134,19 @@ def load_mono_data(params, data):
             bs = params.batch_size if splt == 'train' else 1
             data['mono_stream'][lang][splt] = StreamDataset(mono_data['sentences'], mono_data['positions'], bs, params)
             
-            # our :
-            # todo, todo, todo... : correct it
+            # our 
             n_sentences = data['mono_stream'][lang][splt].n_sentences
             if 0 < params.n_samples[splt] < n_sentences :
                 # todo : shuffle the dataset before selecting
-                """
-                a = 0
-                n_batches = data['mono_stream'][lang][splt].n_batches
-                bs = n_sentences // n_batches
-                b = params.n_samples[splt] // bs
-                if b < 1 : 
-                    b = 1
-                else :
-                    b = getEpochSize(params.n_samples[splt], bs)
-                """
-                n_batches = data['mono_stream'][lang][splt].n_batches 
-                phrase_par_batch = n_sentences / n_batches
-                #print("phrase_par_batch = " + str(int(phrase_par_batch)))
-                n_batches = params.n_samples[splt] / phrase_par_batch
-              
-                a = 0
-                b = int(n_batches)
-                #print("bbbbbbbb", b)
-
+                a, b, n_samples = 0, 0, 0
+                while n_samples < params.n_samples[splt] :
+                    b = b + 1
+                    enquete = copy.copy(data['mono_stream'][lang][splt])
+                    enquete.select_data(a = a, b = b, log = False)
+                    n_samples = len(enquete)
+                    
                 data['mono_stream'][lang][splt].select_data(a = a, b = b)
-
+                 
             # if there are several processes on the same machine, we can split the dataset
             if splt == 'train' and params.split_data and 1 < params.n_gpu_per_node <= data['mono_stream'][lang][splt].n_batches:
                 n_batches = data['mono_stream'][lang][splt].n_batches // params.n_gpu_per_node

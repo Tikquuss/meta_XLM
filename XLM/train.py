@@ -217,6 +217,7 @@ def get_parser():
                         help="Master port (for multi-node SLURM jobs)")
 
     # our
+    # These three parameters will always be rounded to an integer number of batches, so don't be surprised if you see different values than the ones provided.
     parser.add_argument("--train_n_samples", type=int, default=0, help="Just consider train_n_sample train data")
     parser.add_argument("--valid_n_samples", type=int, default=0, help="Just consider valid_n_sample validation data")
     parser.add_argument("--test_n_samples", type=int, default=0, help="Just consider test_n_sample test data for")
@@ -234,8 +235,7 @@ def main(params):
     
     # initialize the experiment
     meta_params = copy.deepcopy(params).meta_params
-    if params.meta_learning :
-        params.meta_params = "..."
+    params.meta_params = "..."
     logger = initialize_exp(params)
     params.meta_params = meta_params
 
@@ -245,9 +245,9 @@ def main(params):
     # load data
     data = load_data(params)
     
-    # todo : good params.n_words (I'll take the one from the first task for the moment.)
+    # todo : good params.n_words (We take the one from the first task for the moment.)
     """
-    But I think that if all the task data are based on the same vocabulary, all these parameters will be the same, 
+    But we think that if all the task data are based on the same vocabulary, all these parameters will be the same, 
     and therefore no problem if we choose one at random.
     """
     p = params.meta_params[list(params.meta_params.keys())[0]]

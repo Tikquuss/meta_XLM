@@ -103,7 +103,7 @@ sub_task=en-fr:10,de-en:-1,de-fr:-1
 # Transform (tokenize, lower and remove accent, loard code and vocab, learn and apply BPE tokenization, binarize...) our data contained 
 # in the text files into a pth file understandable by the framework : takes a lot of time with dataset size, nCodes and shuf_n_samples
 
-./build_meta_data.sh $sub_task $n_samples 
+../build_meta_data.sh $sub_task $n_samples 
 ```
 
 If you stop the execution when processing is being done on a file please delete this erroneous file before continuing or restarting the processing, otherwise the processing will continue with this erroneous file and potential errors will certainly occur.  
@@ -174,6 +174,7 @@ python train.py
 --stopping_criterion _valid_mlm_ppl,10  # end experiment if stopping criterion does not improve
 
 ## dataset
+#### These three parameters will always be rounded to an integer number of batches, so don't be surprised if you see different values than the ones provided.
 --train_n_samples -1                    # Just consider train_n_sample train data
 --valid_n_samples -1                    # Just consider valid_n_sample validation data 
 --test_n_samples -1                     # Just consider test_n_sample test data for
@@ -236,6 +237,7 @@ python train.py
 --validation_metrics 'valid_mt_bleu'                          # end experiment if stopping criterion does not improve
 
 ## dataset
+#### These three parameters will always be rounded to an integer number of batches, so don't be surprised if you see different values than the ones provided.
 --train_n_samples -1                    # Just consider train_n_sample train data
 --valid_n_samples -1                    # Just consider valid_n_sample validation data 
 --test_n_samples -1                     # Just consider test_n_sample test data for
@@ -291,7 +293,7 @@ n_samples=-1
 
 # Let's consider the sub-task en-fr.
 
-./build_fine_tune_data.sh en-fr --n_samples $n_samples
+../build_fine_tune_data.sh en-fr --n_samples $n_samples
 ```
 
 Let's consider the sub-task en-fr.  
@@ -338,9 +340,12 @@ python train.py
 --validation_metrics 'valid_en-fr_mt_bleu'                    # end experiment if stopping criterion does not improve
 
 ## dataset
+#### These three parameters will always be rounded to an integer number of batches, so don't be surprised if you see different values than the ones provided.
 --train_n_samples -1                    # Just consider train_n_sample train data
 --valid_n_samples -1                    # Just consider valid_n_sample validation data 
 --test_n_samples -1                     # Just consider test_n_sample test data for
+#### If you don't have enough RAM or swap memory, leave these three parameters to True, otherwise you may get an error like this when evaluating :
+#### RuntimeError: copy_if failed to synchronize: cudaErrorAssert: device-side assert triggered
 --remove_long_sentences_train True      # remove long sentences in train dataset
 --remove_long_sentences_valid False     # remove long sentences in valid dataset
 --remove_long_sentences_test False      # remove long sentences in test dataset

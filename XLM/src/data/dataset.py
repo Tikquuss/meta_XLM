@@ -49,7 +49,9 @@ class StreamDataset(object):
         """
         return self.n_sentences
 
-    def select_data(self, a, b):
+    #def select_data(self, a, b):
+    # our
+    def select_data(self, a, b, log = True):
         """
         Only select a subset of the dataset.
         """
@@ -57,7 +59,8 @@ class StreamDataset(object):
             logger.warning("Invalid split values: %i %i - %i" % (a, b, self.n_batches))
             return
         assert 0 <= a < b <= self.n_batches
-        logger.info("Selecting batches from %i to %i ..." % (a, b))
+        if log :
+            logger.info("Selecting batches from %i to %i ..." % (a, b))
 
         # sub-select
         self.data = self.data[a * self.bptt:b * self.bptt]
