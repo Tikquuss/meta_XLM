@@ -306,7 +306,7 @@ python train.py
 --exp_name meta_MT_enfr                                       # experiment name
 --exp_id maml                                                 # Experiment ID
 --dump_path ./dumped/                                         # where to store the experiment (the model will be stored in $dump_path/$exp_name/$exp_id)
---reload_model 'dumped/meta_MT_enfrde/maml/checkpoint.pth,dumped/meta_MT_enfrde/maml/checkpoint.pth'   # model to reload for encoder,decoder
+--reload_model 'dumped/meta_MT_enfrde/maml/best-valid_mt_bleu.pth,dumped/meta_MT_enfrde/maml/best-valid_mt_bleu.pth'   # model to reload for encoder,decoder
 
 ## data location / training objective
 --data_path $OUTPATH/fine_tune                                # data location

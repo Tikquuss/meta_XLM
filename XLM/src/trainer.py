@@ -470,10 +470,12 @@ class Trainer(object):
         params = self.params
         if data_key :
             params = copy.deepcopy(self.params.meta_params[data_key])
-            try :
-                params.mask_index = self.params.mask_index
-            except :
-                pass
+        try :
+            params.mask_index
+        except :
+            if not params.meta_learning :
+                params.mask_index = self.params.meta_params[self.params.lgs[0]]
+                
         
         if params.word_blank == 0:
             return x, l

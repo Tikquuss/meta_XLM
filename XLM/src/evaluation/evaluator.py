@@ -284,6 +284,10 @@ class Evaluator(object):
         
         params = self.params
         
+        # our
+        evaluate_mt = False
+        evaluate_mlm = False
+        
         scores = OrderedDict({'epoch': trainer.epoch})
 
         with torch.no_grad():
@@ -319,10 +323,9 @@ class Evaluator(object):
                     # our 
                     
                     # equivalent to "for task in list of task" in the original algorithm
-                    
-                    for lgs, params in params.meta_params.items() :
+                    for lgs, params_ in params.meta_params.items() :
                         # todo ?
-                        params.is_master = self.params.is_master
+                        params_.is_master = params.is_master
                         
                         data_key=lgs
                         
@@ -332,51 +335,68 @@ class Evaluator(object):
                             scores[data_key] = {}
                             scores[data_key]['epoch'] = scores['epoch']
                         
-                        
                         # causal prediction task (evaluate perplexity and accuracy)
-                        for lang1, lang2 in params.clm_steps:
+                        for lang1, lang2 in params_.clm_steps:
                             self.evaluate_clm(scores[data_key], data_set, lang1, lang2, data_key = data_key)
-                        
-                        
+               
                         # prediction task (evaluate perplexity and accuracy)
-                        for lang1, lang2 in params.mlm_steps:
+                        for lang1, lang2 in params_.mlm_steps:
+                            evaluate_mlm = True
                             self.evaluate_mlm(scores[data_key], data_set, lang1, lang2, data_key = data_key)
                         
                         # machine translation task (evaluate perplexity and accuracy)
-                        for lang1, lang2 in set(params.mt_steps + [(l2, l3) for _, l2, l3 in params.bt_steps]):
-                            eval_bleu = params.eval_bleu and params.is_master
+                        for lang1, lang2 in set(params_.mt_steps + [(l2, l3) for _, l2, l3 in params_.bt_steps]):
+                            evaluate_mt = True
+                            eval_bleu = params_.eval_bleu and params_.is_master
                             self.evaluate_mt(scores[data_key], data_set, lang1, lang2, eval_bleu, data_key = data_key)
                         
                         # report average metrics per language
-                        _clm_mono = [l1 for (l1, l2) in params.clm_steps if l2 is None]
+                        _clm_mono = [l1 for (l1, l2) in params_.clm_steps if l2 is None]
                         if len(_clm_mono) > 0:
                             scores[data_key]['%s_clm_ppl' % data_set] = np.mean([scores[data_key]['%s_%s_clm_ppl' % (data_set, lang)] for lang in _clm_mono])
                             scores[data_key]['%s_clm_acc' % data_set] = np.mean([scores[data_key]['%s_%s_clm_acc' % (data_set, lang)] for lang in _clm_mono])
-                        _mlm_mono = [l1 for (l1, l2) in params.mlm_steps if l2 is None]
+                        _mlm_mono = [l1 for (l1, l2) in params_.mlm_steps if l2 is None]
                         if len(_mlm_mono) > 0:
                             scores[data_key]['%s_mlm_ppl' % data_set] = np.mean([scores[data_key]['%s_%s_mlm_ppl' % (data_set, lang)] for lang in _mlm_mono])
                             scores[data_key]['%s_mlm_acc' % data_set] = np.mean([scores[data_key]['%s_%s_mlm_acc' % (data_set, lang)] for lang in _mlm_mono])
-                    
-        if params.meta_learning :
-            for data_set in ['valid', 'test'] :
-                for data_key, params in params.meta_params.items() :
-                    scores[data_key]['task_%s_%s_mt_ppl' % (data_key, data_set)] = np.mean([scores[data_key]['%s_%s_mt_ppl' % (data_set, data_key)] for data_key in params.meta_params.keys()])
-                    scores[data_key]['task_%s_%s_mt_acc' % (data_key, data_set)] = np.mean([scores[data_key]['%s_%s_mt_acc' % (data_set, data_key)] for data_key in params.meta_params.keys()])
-                    scores[data_key]['task_%s_%s_mt_bleu' % (data_key, data_set)] = np.mean([scores[data_key]['%s_%s_mt_bleu' % (data_set, data_key)] for data_key in params.meta_params.keys()])
         
+        
+        if evaluate_mlm :
             for data_set in ['valid', 'test'] :
-                # todo todo : Right now I'm averaging the values for each task. 
-                # Do a study later to see how to weight the coefficients of this average (average weighted by the coefficients not all equal). 
-                for value in ['ppl', 'acc', 'bleu'] :
-                    scores['%s_mt_%s' % (data_set, value)] = np.mean([scores[data_key]['task_%s_%s_mt_%s' % (data_key, data_set, value)] for data_key in params.meta_params.keys()])
-               
-              
-            # todo : correct the NaN
+                for data_key, params_ in params.meta_params.items() :
+                    keys = params_.meta_params.keys()
+                    scores[data_key]['task_(%s)_%s_mlm_ppl' % (data_key, data_set)] = scores[data_key]['%s_mlm_ppl' % data_set]
+                    scores[data_key]['task_(%s)_%s_mlm_acc' % (data_key, data_set)] = scores[data_key]['%s_mlm_acc' % data_set]
+          
             for data_set in ['valid', 'test'] :
-                for value in ['ppl', 'acc', 'bleu'] :
-                    if scores['%s_mt_%s' % (data_set, value)] == np.nan : 
-                        scores['%s_mt_%s' % (data_set, value)] = 1
+                # Right now we are averaging the values for each task. 
+                # todo : Do a study later to see how to weight the coefficients of this average (average weighted by the coefficients not all equal). 
+                keys = params.meta_params.keys()
+                for value in ['ppl', 'acc'] :
+                    scores['%s_mlm_%s' % (data_set, value)] =  np.mean([scores[data_key]['task_(%s)_%s_mlm_%s' % (data_key, data_set, value)] for data_key in keys]) 
+
                     
+        if evaluate_mt :
+            eval_bleu = params.eval_bleu and params.is_master
+            if params.meta_learning :
+                for data_set in ['valid', 'test'] :
+                    for data_key, params_ in params.meta_params.items() :
+                        keys = params_.meta_params.keys()
+                        scores[data_key]['task_(%s)_%s_mt_ppl' % (data_key, data_set)] = np.mean([scores[data_key]['%s_%s_mt_ppl' % (data_set, data_key)] for data_key in keys])
+                        scores[data_key]['task_(%s)_%s_mt_acc' % (data_key, data_set)] =  np.mean([scores[data_key]['%s_%s_mt_acc' % (data_set, data_key)] for data_key in keys])
+                        if eval_bleu :
+                            scores[data_key]['task_(%s)_%s_mt_bleu' % (data_key, data_set)] =  np.mean([scores[data_key]['%s_%s_mt_bleu' % (data_set, data_key)] for data_key in keys]) 
+
+                for data_set in ['valid', 'test'] :
+                    # Right now we are averaging the values for each task. 
+                    # todo : Do a study later to see how to weight the coefficients of this average (average weighted by the coefficients not all equal). 
+                    keys = params.meta_params.keys()
+                    for value in ['ppl', 'acc'] :
+                        scores['%s_mt_%s' % (data_set, value)] =  np.mean([scores[data_key]['task_(%s)_%s_mt_%s' % (data_key, data_set, value)] for data_key in keys]) 
+
+                    if eval_bleu :
+                        scores['%s_mt_bleu' % data_set] = np.mean([scores[data_key]['task_(%s)_%s_mt_bleu' % (data_key, data_set)] for data_key in keys])
+
         return scores
 
     def evaluate_clm(self, scores, data_set, lang1, lang2, data_key = None):
@@ -704,7 +724,6 @@ def eval_moses_bleu(ref, hyp):
     evaluate the BLEU score using Moses scripts.
     """
     assert os.path.isfile(hyp)
-    print("ref", ref)
     assert os.path.isfile(ref) or os.path.isfile(ref + '0')
     assert os.path.isfile(BLEU_SCRIPT_PATH)
     command = BLEU_SCRIPT_PATH + ' %s < %s'
