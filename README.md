@@ -293,7 +293,7 @@ n_samples=-1
 
 # Let's consider the sub-task en-fr.
 
-../build_fine_tune_data.sh en-fr --n_samples $n_samples
+../build_fine_tune_data.sh en-fr $n_samples
 ```
 
 Let's consider the sub-task en-fr.  
