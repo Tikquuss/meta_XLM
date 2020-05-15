@@ -285,8 +285,10 @@ class Evaluator(object):
         params = self.params
         
         # our
-        evaluate_mt = False
         evaluate_mlm = False
+        evaluate_clm = False
+        evaluate_mt = False
+        
         
         scores = OrderedDict({'epoch': trainer.epoch})
 
@@ -337,6 +339,7 @@ class Evaluator(object):
                         
                         # causal prediction task (evaluate perplexity and accuracy)
                         for lang1, lang2 in params_.clm_steps:
+                            evaluate_clm = True
                             self.evaluate_clm(scores[data_key], data_set, lang1, lang2, data_key = data_key)
                
                         # prediction task (evaluate perplexity and accuracy)
@@ -349,7 +352,7 @@ class Evaluator(object):
                             evaluate_mt = True
                             eval_bleu = params_.eval_bleu and params_.is_master
                             self.evaluate_mt(scores[data_key], data_set, lang1, lang2, eval_bleu, data_key = data_key)
-                        
+                        """
                         # report average metrics per language
                         _clm_mono = [l1 for (l1, l2) in params_.clm_steps if l2 is None]
                         if len(_clm_mono) > 0:
@@ -359,44 +362,72 @@ class Evaluator(object):
                         if len(_mlm_mono) > 0:
                             scores[data_key]['%s_mlm_ppl' % data_set] = np.mean([scores[data_key]['%s_%s_mlm_ppl' % (data_set, lang)] for lang in _mlm_mono])
                             scores[data_key]['%s_mlm_acc' % data_set] = np.mean([scores[data_key]['%s_%s_mlm_acc' % (data_set, lang)] for lang in _mlm_mono])
+                        """
         
+        # our
         
-        if evaluate_mlm :
+        # if params.meta_learning : report average metrics per task
+        ## clm and mlm
+        for objectif in ((['clm'] if evaluate_clm else []) + (['mlm'] if evaluate_mlm else [])) :
+            values = ['ppl', 'acc']
+            for data_key, params_ in params.meta_params.items() :
+                langs = []
+                steps = params_.mlm_steps if objectif=='mlm' else params_.clm_steps
+                for (l1, l2) in steps :
+                    if (l1 is None) and (not (l2 is None)) :
+                        langs.append(l2)
+                    elif (not (l1 is None)) and (l2 is None) :
+                        langs.append(l1)
+                    elif (not (l1 is None)) and (not (l2 is None)) :
+                        langs.append(l1+"_"+l2)    
+                # removes duplicates
+                langs = list(set(langs))
+                    
+                for data_set in ['valid', 'test'] :
+                    for value in values :
+                        scores[data_key]['task_(%s)_%s_%s_%s' % (data_key, data_set, objectif, value)] = np.mean(
+                            [scores[data_key]['%s_%s_%s_%s' % (data_set, lang, objectif, value)] for lang in langs]
+                        )
+                
             for data_set in ['valid', 'test'] :
-                for data_key, params_ in params.meta_params.items() :
-                    keys = params_.meta_params.keys()
-                    scores[data_key]['task_(%s)_%s_mlm_ppl' % (data_key, data_set)] = scores[data_key]['%s_mlm_ppl' % data_set]
-                    scores[data_key]['task_(%s)_%s_mlm_acc' % (data_key, data_set)] = scores[data_key]['%s_mlm_acc' % data_set]
-          
+                # Right now we are averaging the values for each task. 
+                # todo : Do a study to see how to weight the coefficients of this average (average weighted by the coefficients not all equal). 
+                for value in values :
+                    scores['%s_%s_%s' % (data_set, objectif, value)] =  np.mean(
+                        [
+                            scores[data_key]['task_(%s)_%s_%s_%s' % (data_key, data_set, objectif, value)] for data_key in params.meta_params.keys()    
+                        ]
+                    )
+         
+        ## mt
+        if evaluate_mt :
+                
+            eval_bleu = params.eval_bleu and params.is_master
+            values = ['ppl', 'acc'] + (['bleu'] if eval_bleu else [])
+                
+            for data_key in params.meta_params.keys() :
+                    
+                langs = data_key.split('-')
+                langs = [data_key, langs[1]+"-"+langs[0]]
+                    
+                for data_set in ['valid', 'test'] :
+                    for value in values :
+                        scores[data_key]['task_(%s)_%s_mt_%s' % (data_key, data_set, value)] = np.mean(
+                            [scores[data_key]['%s_%s_mt_%s' % (data_set, lang, value)] for lang in langs]
+                        )
+                        #scores[data_key]['%s_mt_%s' % (data_set, value)] = scores[data_key]['task_(%s)_%s_mt_%s' % (data_key, data_set, value)]
+        
             for data_set in ['valid', 'test'] :
                 # Right now we are averaging the values for each task. 
                 # todo : Do a study later to see how to weight the coefficients of this average (average weighted by the coefficients not all equal). 
-                keys = params.meta_params.keys()
-                for value in ['ppl', 'acc'] :
-                    scores['%s_mlm_%s' % (data_set, value)] =  np.mean([scores[data_key]['task_(%s)_%s_mlm_%s' % (data_key, data_set, value)] for data_key in keys]) 
-
+                for value in values :
+                    scores['%s_mt_%s' % (data_set, value)] =  np.mean(
+                        [
+                            #scores[data_key]['%s_mt_%s' % (data_set, value)] for data_key in params.meta_params.keys()
+                            scores[data_key]['task_(%s)_%s_mt_%s' % (data_key, data_set, value)] for data_key in params.meta_params.keys()   
+                        ]
+                    )
                     
-        if evaluate_mt :
-            eval_bleu = params.eval_bleu and params.is_master
-            if params.meta_learning :
-                for data_set in ['valid', 'test'] :
-                    for data_key, params_ in params.meta_params.items() :
-                        keys = params_.meta_params.keys()
-                        scores[data_key]['task_(%s)_%s_mt_ppl' % (data_key, data_set)] = np.mean([scores[data_key]['%s_%s_mt_ppl' % (data_set, data_key)] for data_key in keys])
-                        scores[data_key]['task_(%s)_%s_mt_acc' % (data_key, data_set)] =  np.mean([scores[data_key]['%s_%s_mt_acc' % (data_set, data_key)] for data_key in keys])
-                        if eval_bleu :
-                            scores[data_key]['task_(%s)_%s_mt_bleu' % (data_key, data_set)] =  np.mean([scores[data_key]['%s_%s_mt_bleu' % (data_set, data_key)] for data_key in keys]) 
-
-                for data_set in ['valid', 'test'] :
-                    # Right now we are averaging the values for each task. 
-                    # todo : Do a study later to see how to weight the coefficients of this average (average weighted by the coefficients not all equal). 
-                    keys = params.meta_params.keys()
-                    for value in ['ppl', 'acc'] :
-                        scores['%s_mt_%s' % (data_set, value)] =  np.mean([scores[data_key]['task_(%s)_%s_mt_%s' % (data_key, data_set, value)] for data_key in keys]) 
-
-                    if eval_bleu :
-                        scores['%s_mt_bleu' % data_set] = np.mean([scores[data_key]['task_(%s)_%s_mt_bleu' % (data_key, data_set)] for data_key in keys])
-
         return scores
 
     def evaluate_clm(self, scores, data_set, lang1, lang2, data_key = None):

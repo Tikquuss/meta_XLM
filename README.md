@@ -152,9 +152,9 @@ python train.py
 
 ## data location / training objective
 --data_path  $OUTPATH                   # data location 
---lgs 'en-fr|en-de|de-fr'               # considered languages/meta-tasks
+--lgs 'en-fr|de-en|de-fr'               # considered languages/meta-tasks
 --clm_steps ''                          # CLM objective
---mlm_steps 'en,fr|en,de|de,fr'         # MLM objective
+--mlm_steps 'en,fr|de,en|de,fr'         # MLM objective
 
 ## transformer parameters
 --emb_dim 1024                          # embeddings / model dimension
@@ -208,9 +208,9 @@ python train.py
                                                               # model to reload for encoder,decoder
 ## data location / training objective
 --data_path $OUTPATH                                          # data location
---lgs 'en-fr|en-de|de-fr'                                     # considered languages/meta-tasks
---ae_steps 'en,fr|en,de|de-fr'                                # denoising auto-encoder training steps
---bt_steps 'en-fr-en,fr-en-fr|en-de-en,de-en-de|de-fr-de,fr-de-fr'    # back-translation steps
+--lgs 'en-fr|de-en|de-fr'                                     # considered languages/meta-tasks
+--ae_steps 'en,fr|de,en|de-fr'                                # denoising auto-encoder training steps
+--bt_steps 'en-fr-en,fr-en-fr|de-en-de,en-de-en|de-fr-de,fr-de-fr'    # back-translation steps
 --word_shuffle 3                                              # noise for auto-encoding loss
 --word_dropout 0.1                                            # noise for auto-encoding loss
 --word_blank 0.1                                              # noise for auto-encoding loss
@@ -251,8 +251,8 @@ python train.py
 Above training is unsupervised. For a supervised nmt, add `--mt_steps 'en-fr,fr-en|en-de,de-en|de-fr,fr-de'` if parallel data is available.  
 
 Here we have mentioned the objectives for each meta-task. If you want to exclude a meta-task in an objective, put a blank in its place. Suppose we want to exclude from `ae_steps 'en,fr|en,de|de-fr` the meta-task:
-- en-de : `ae_steps 'en,fr||de-fr'` 
-- de-fr : `ae_steps 'en,fr|en,de|'`
+- de-en : `ae_steps 'en,fr||de-fr'` 
+- de-fr : `ae_steps 'en,fr|de,en|'`
 
 ### Fine-tune the meta-model on a specific (sub) nmt (meta) task
 

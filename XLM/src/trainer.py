@@ -474,7 +474,7 @@ class Trainer(object):
             params.mask_index
         except :
             if not params.meta_learning :
-                params.mask_index = self.params.meta_params[self.params.lgs[0]]
+                params.mask_index = self.params.meta_params[self.params.lgs[0]].mask_index
                 
         
         if params.word_blank == 0:
