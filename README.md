@@ -88,7 +88,7 @@ test_size=10             # Percentage of test data (%)
 val_size=10              # Percentage of valid data (%)
 
 # tools paths
-TOKENIZE=tools/tokenize_our.sh
+TOKENIZE=tools/tokenizer_our.sh
 LOWER_REMOVE_ACCENT=tools/lowercase_and_remove_accent.py
 FASTBPE=tools/fastBPE/fast
 
@@ -98,7 +98,7 @@ OUTPATH=... # path where processed files will be stored
 mkdir -p $OUTPATH
 
 chmod +x $FASTBPE
-chmod +x build_meta_data.sh
+chmod +x ../build_meta_data.sh
 chmod +x tools/mosesdecoder/scripts/tokenizer/*.perl
 
 # The n_sample parameter is optional, and when it is not passed or when it exceeds the dataset size, the whole dataset is considered

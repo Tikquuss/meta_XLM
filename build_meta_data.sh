@@ -83,10 +83,10 @@ get_n_samples() {
     else
       NTAIL=$(($2/2));
       NHEAD=$(($2 - $NTAIL));
-      #head -n $NHEAD $1 > $3;
-      #tail -n $NTAIL $1 >> $3;
-      shuf --random-source=<(get_seeded_random 42) $1 | head $NHEAD   > $3;
-      shuf --random-source=<(get_seeded_random 42) $1 | tail $NTAIL   >> $3;
+      head -n $NHEAD $1 > $3;
+      tail -n $NTAIL $1 >> $3;
+      #shuf --random-source=<(get_seeded_random 42) $1 | head $NHEAD   > $3;
+      #shuf --random-source=<(get_seeded_random 42) $1 | tail $NTAIL   >> $3;
     fi
 }
 
@@ -103,7 +103,7 @@ if [ $PARA = "True" ]; then
                     get_n_samples $PARA_PATH/$pair.$lg.txt $N_SAMPLES $PARA_PATH/samples.$pair.$lg
                     cat $PARA_PATH/samples.$pair.$lg | $TOKENIZE $lg $threads_for_tokenizer | python $LOWER_REMOVE_ACCENT > $PARA_PATH/$pair.$lg.all 
                     # todo : memory
-                    rm $PARA_PATH/${pair}/samples.$pair.$lg
+                    rm $PARA_PATH/samples.$pair.$lg
                 fi
                 echo "*** Tokenized (+ lowercase + accent-removal) $pair.$lg data to $PARA_PATH/? ***"
             else
@@ -321,42 +321,46 @@ build_fine_tune_data() {
             for lg in $(echo $pair | sed -e 's/\-/ /g'); do
                 for split in train valid test; do
                     # PARA
-                    name=$OUTPATH/$pair.$lg.$split
-                    NLINES=`wc -l $name`;
-                    IFS=' ' read -r -a array <<< "$NLINES"
-                    NLINES=${array[0]}
-                    NLINES=$(($NLINES+1));
-                    N_FINE_TUNE=$((($NLINES*$data_percent)/100))
-                    if [ $NLINES -le $N_FINE_TUNE ]; then
-                        # todo : exit
-                        echo "error"
-                    else
-                        NREST=$(($NLINES - $N_FINE_TUNE));
-                        mv $OUTPATH/$pair.$lg.$split $OUTPATH/$pair.$lg.$split.tmp
-                        shuf --random-source=<(get_seeded_random 42) $OUTPATH/$pair.$lg.$split.tmp | head -$NREST > $OUTPATH/$pair.$lg.$split;
-                        shuf --random-source=<(get_seeded_random 42) $OUTPATH/$pair.$lg.$split.tmp | tail -$N_FINE_TUNE > $OUTPATH/fine_tune/$pair.$lg.$split;
-                        # todo : memory
-                        rm $OUTPATH/$pair.$lg.$split.tmp
+                    if [ $PARA = "True" ]; then
+                        name=$OUTPATH/$pair.$lg.$split
+                        NLINES=`wc -l $name`;
+                        IFS=' ' read -r -a array <<< "$NLINES"
+                        NLINES=${array[0]}
+                        NLINES=$(($NLINES+1));
+                        N_FINE_TUNE=$((($NLINES*$data_percent)/100))
+                        if [ $NLINES -le $N_FINE_TUNE ]; then
+                            # todo : exit
+                            echo "error"
+                        else
+                            NREST=$(($NLINES - $N_FINE_TUNE));
+                            mv $OUTPATH/$pair.$lg.$split $OUTPATH/$pair.$lg.$split.tmp
+                            shuf --random-source=<(get_seeded_random 42) $OUTPATH/$pair.$lg.$split.tmp | head -$NREST > $OUTPATH/$pair.$lg.$split;
+                            shuf --random-source=<(get_seeded_random 42) $OUTPATH/$pair.$lg.$split.tmp | tail -$N_FINE_TUNE > $OUTPATH/fine_tune/$pair.$lg.$split;
+                            # todo : memory
+                            rm $OUTPATH/$pair.$lg.$split.tmp
+                        fi
                     fi
 
                     # MONO
-                    name=$OUTPATH/$split.$lg
-                    #NLINES=`wc -l $name | awk -F " " '{print $name}'`;
-                    NLINES=`wc -l $name`;
-                    IFS=' ' read -r -a array <<< "$NLINES"
-                    NLINES=${array[0]}
-                    NLINES=$(($NLINES+1));
-                    N_FINE_TUNE=$((($NLINES*$data_percent)/100))
-                    if [ $NLINES -le $N_FINE_TUNE ]; then
-                        # todo : exit
-                        echo "error"
-                    else
-                        NREST=$(($NLINES - $N_FINE_TUNE));
-                        mv $OUTPATH/$split.$lg $OUTPATH/$split.$lg.tmp
-                        shuf --random-source=<(get_seeded_random 42) $OUTPATH/$split.$lg.tmp | head -$NREST > $OUTPATH/$split.$lg; 
-                        shuf --random-source=<(get_seeded_random 42) $OUTPATH/$split.$lg.tmp | tail -$N_FINE_TUNE > $OUTPATH/fine_tune/$split.$lg;
-                        # todo : memory
-                        rm $OUTPATH/$split.$lg.tmp
+                    if [ $MONO = "True" ] && [ -d $MONO_PATH ]; then
+                        name=$OUTPATH/$split.$lg
+                        #NLINES=`wc -l $name | awk -F " " '{print $name}'`;
+                        NLINES=`wc -l $name`;
+                        IFS=' ' read -r -a array <<< "$NLINES"
+                        NLINES=${array[0]}
+                        NLINES=$(($NLINES+1));
+                        N_FINE_TUNE=$((($NLINES*$data_percent)/100))
+                        if [ $NLINES -le $N_FINE_TUNE ]; then
+                            # todo : exit
+                            echo "error"
+                        else
+                            NREST=$(($NLINES - $N_FINE_TUNE));
+                            mv $OUTPATH/$split.$lg $OUTPATH/$split.$lg.tmp
+                            shuf --random-source=<(get_seeded_random 42) $OUTPATH/$split.$lg.tmp | head -$NREST > $OUTPATH/$split.$lg; 
+                            shuf --random-source=<(get_seeded_random 42) $OUTPATH/$split.$lg.tmp | tail -$N_FINE_TUNE > $OUTPATH/fine_tune/$split.$lg;
+                            # todo : memory
+                            rm $OUTPATH/$split.$lg.tmp
+                        fi
                     fi
                 done
             done
