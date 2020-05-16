@@ -401,28 +401,28 @@ def main(params):
             while flag :
                         
                 # CLM steps
-                print("clm_step", flag)
+                #print("clm_step", flag)
                 flag = trainer.clm_step(lang1_dic['clm_step'] , lang2_dic['clm_step'], params.lambda_clm, data_keys_dic['clm_step'])
                     
-                print("mlm_step", flag)
+                #print("mlm_step", flag)
                 # MLM steps (also includes TLM if lang2 is not None) 
                 flag = flag or trainer.mlm_step(lang1_dic['mlm_step'] , lang2_dic['mlm_step'], params.lambda_mlm, data_keys_dic['mlm_step'])
                     
-                print("pc_step", flag)
+                #print("pc_step", flag)
                 # parallel classification steps
                 flag = flag or trainer.pc_step(lang1_dic['pc_step'] , lang2_dic['pc_step'], params.lambda_pc, data_keys_dic['pc_step'])
                     
                 if isinstance(trainer, EncDecTrainer) :
                         
-                    print("ae_step", flag)
+                    #print("ae_step", flag)
                     # denoising auto-encoder steps
                     flag = flag or trainer.mt_step(lang1_dic['ae_step'] , lang1_dic['ae_step'], params.lambda_ae, data_keys_dic['ae_step'])
 
-                    print("mt_step", flag)
+                    #print("mt_step", flag)
                     # machine translation steps    
                     flag = flag or trainer.mt_step(lang1_dic['mt_step'] , lang2_dic['mt_step'], params.lambda_mt, data_keys_dic['mt_step'])
 
-                    print("bt_step", flag)
+                    #print("bt_step", flag)
                     # back-translation steps
                     flag = flag or trainer.bt_step(lang1_dic['bt_step'] , lang2_dic['bt_step'], lang3_dic['bt_step'], params.lambda_bt, data_keys_dic['bt_step'])    
                     
