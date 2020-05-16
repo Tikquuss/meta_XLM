@@ -51,8 +51,17 @@ Parallel and monolingual data can all be in the same folder.
 
 Note : Languages must be submitted in alphabetical order (de-en and not en-de, fr-ru and not ru-fr ...). If you submit them in any order you will have problems loading data during training, because when you run the [train.py](XLM/train.py) script the parameters like the language pair are put back in alphabetical order before being processed. Don't worry about this alphabetical order restriction, XLM for MT is naturally trained to translate sentences in both directions. See [translate.py](translate.py).
 
-[OPUS collections](http://opus.nlpl.eu/) is a good source of dataset. We illustrate in the [opus.sh](opus.sh) script how to download the data from opus and convert it to a text file.  
-Another source for other_languages-english data is [anki Tab-delimited Bilingual Sentence Pairs](http://www.manythings.org/anki/). Simply download the .zip file, unzip to extract the other_language.txt file. This file usually contains data in the form of `sentence_en sentence_other_language other_information' on each line. You have to make your own extraction script in two files : en-ol.en.txt and en-ol.ol.txt with ol=other_language.
+[OPUS collections](http://opus.nlpl.eu/) is a good source of dataset. We illustrate in the [opus.sh](opus.sh) script how to download the data from opus and convert it to a text file. 
+
+Another source for other_languages-english data is [anki Tab-delimited Bilingual Sentence Pairs](http://www.manythings.org/anki/). Simply download the .zip file, unzip to extract the other_language.txt file. This file usually contains data in the form of `sentence_en sentence_other_language other_information` on each line. See [anki.py](anki.py) and [anky.sh](anki.sh) in relation to a how to extract data from [anki](http://www.manythings.org/anki/). Example of how to extract de-en pair data.
+```
+cd meta_XLM
+mkdir XLM/data/para
+chmod +x anki.sh
+./anki.sh de,en deu-eng meta_XLM/XLM/data/para anki.py
+#./anki.sh en,fr fra-eng meta_XLM/XLM/data/para anki.py
+```
+After that you will have in `data/para` following files : de-en.de.txt, de-en.en.txt, deu.txt, deu-eng.zip and _about.txt  
 
 Move to the `XLM` folder in advance.  
 
