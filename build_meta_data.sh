@@ -283,13 +283,16 @@ if [ $MONO = "True" ] && [ -d $MONO_PATH ]; then
                 if [ ! -f $OUTPATH/$split.$lg ]; then
                     $FASTBPE applybpe $OUTPATH/$split.$lg $MONO_PATH/$lg.$split $OUTPATH/codes
                     # Add para data to mono data before preprocessing
-                    if [ $PARA = "True" ]; then
-                        for lg_tmp in $(echo $pair | sed -e 's/\-/ /g'); do
-                            for split_tmp in train valid test; do
-                                # Add the contents of $OUTPATH/$pair.$lg_tmp.$split_tmp after $OUTPATH/$split.$lg
-                                cat $OUTPATH/$pair.$lg_tmp.$split_tmp >> $OUTPATH/$split.$lg
-                            done
-                        done
+                    add_para_data_to_mono_data=${3-'True'}
+                    if [ $add_para_data_to_mono_data = "True" ]; then 
+                      if [ $PARA = "True" ]; then
+                          for lg_tmp in $(echo $pair | sed -e 's/\-/ /g'); do
+                              for split_tmp in train valid test; do
+                                  # Add the contents of $OUTPATH/$pair.$lg_tmp.$split_tmp after $OUTPATH/$split.$lg
+                                  cat $OUTPATH/$pair.$lg_tmp.$split_tmp >> $OUTPATH/$split.$lg
+                              done
+                          done
+                      fi
                     fi
                 else
                     echo "file $OUTPATH/$split.$lg already exists"
