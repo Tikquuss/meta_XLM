@@ -53,7 +53,7 @@ Note : Languages must be submitted in alphabetical order (de-en and not en-de, f
 
 [OPUS collections](http://opus.nlpl.eu/) is a good source of dataset. We illustrate in the [opus.sh](opus.sh) script how to download the data from opus and convert it to a text file. 
 
-Another source for other_languages-english data is [anki Tab-delimited Bilingual Sentence Pairs](http://www.manythings.org/anki/). Simply download the .zip file, unzip to extract the other_language.txt file. This file usually contains data in the form of `sentence_en sentence_other_language other_information` on each line. See [anki.py](anki.py) and [anky.sh](anki.sh) in relation to a how to extract data from [anki](http://www.manythings.org/anki/). Example of how to extract de-en pair data.
+Another source for other_languages-english data is [anki Tab-delimited Bilingual Sentence Pairs](http://www.manythings.org/anki/). Simply download the .zip file, unzip to extract the other_language.txt file. This file usually contains data in the form of `sentence_en sentence_other_language other_information` on each line. See [anki.py](anki.py) and [anky.sh](anki.sh) in relation to a how to extract data from [anki](http://www.manythings.org/anki/). Example of how to download and extract de-en pair data.
 ```
 cd meta_XLM
 mkdir XLM/data/para
@@ -107,12 +107,16 @@ n_samples=-1
 
 # If you don't have any other data to fine-tune your model on a specific sub-task, specify the percentage of the sub-task metadata to consider or -1 to ignore it.
 
-sub_task=en-fr:10,de-en:-1,de-fr:-1
+sub_tasks=en-fr:10,de-en:-1,de-fr:-1
+
+# The following parameter allows, when having independent monolingual and parallel data, to add the parallel data to the monolingual data. It is left by default to True. 
+# To pass this parameter you have to specify the number of examples as indicated above, because these parameters are received in the script in the order mentioned here.
+add_para_data_to_mono_data=True
 
 # Transform (tokenize, lower and remove accent, loard code and vocab, learn and apply BPE tokenization, binarize...) our data contained 
 # in the text files into a pth file understandable by the framework : takes a lot of time with dataset size, nCodes and shuf_n_samples
 
-../build_meta_data.sh $sub_task $n_samples 
+../build_meta_data.sh $sub_tasks $n_samples $add_para_data_to_mono_data
 ```
 
 If you stop the execution when processing is being done on a file please delete this erroneous file before continuing or restarting the processing, otherwise the processing will continue with this erroneous file and potential errors will certainly occur.  
