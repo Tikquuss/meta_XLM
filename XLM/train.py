@@ -426,7 +426,7 @@ def main(params):
                     # back-translation steps
                     flag = flag or trainer.bt_step(lang1_dic['bt_step'] , lang2_dic['bt_step'], lang3_dic['bt_step'], params.lambda_bt, data_keys_dic['bt_step'])    
                     
-                    trainer.iter()  
+                trainer.iter()  
                         
         logger.info("============ End of epoch %i ============" % trainer.epoch)
         
