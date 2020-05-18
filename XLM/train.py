@@ -235,7 +235,7 @@ def main(params):
     
     # initialize the experiment
     meta_params = copy.deepcopy(params).meta_params
-    params.meta_params = "..."
+    params.meta_params = "..." # to long to be log
     logger = initialize_exp(params)
     params.meta_params = meta_params
 
@@ -320,7 +320,7 @@ def main(params):
                 trainer.iter()
         else :
             # our
-                
+            trainer.n_sentences = {}
             """
             Here we build language lists for each of our meta-taks. Indeed, for two language lists l1 and l2, 
             the objective will be done with l1[i] and l2[i] respectively, this for each index i of the two lists. 
@@ -334,7 +334,8 @@ def main(params):
                  
             # equivalent to "for task in list of task" in the original algorithm,  except here we prepare all the tasks beforehand.
             for lgs in params.meta_params.keys() :
-                       
+                trainer.n_sentences[lgs] = 0
+                
                 # CLM
                 try :
                     lang1_dic['clm_step']
