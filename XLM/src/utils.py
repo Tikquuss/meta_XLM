@@ -171,15 +171,27 @@ def get_lambda_value(config, n_iter):
     x_b, y_b = config[i + 1]
     return y_a + (n_iter - x_a) * float(y_b - y_a) / float(x_b - x_a)
 
-
+# our
 def update_lambdas(params, n_iter):
     """
     Update all lambda coefficients.
     """
     for name in DYNAMIC_COEFF:
-        config = getattr(params, name + '_config')
-        if config is not None:
-            setattr(params, name, get_lambda_value(config, n_iter))
+        if not params.meta_learning :
+            config = getattr(params, name + '_config')
+            if config is not None:
+                setattr(params, name, get_lambda_value(config, n_iter))
+        else :
+            # our
+            for lgs in params.meta_params.keys() :
+                try :
+                    config = getattr(params.meta_params[lgs], name + '_config')
+                except AttributeError :
+                    setattr(params.meta_params[lgs], name + '_config', getattr(params, name + '_config'))
+                    config = getattr(params.meta_params[lgs], name + '_config')
+                if config is not None:
+                    setattr(params.meta_params[lgs], name, get_lambda_value(config, n_iter))
+
 
 
 def set_sampling_probs(data, params):
