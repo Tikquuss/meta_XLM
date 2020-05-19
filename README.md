@@ -223,7 +223,7 @@ python train.py
 ## data location / training objective
 --data_path $OUTPATH                                          # data location
 --lgs 'en-fr|de-en|de-fr'                                     # considered languages/meta-tasks
---ae_steps 'en,fr|de,en|de-fr'                                # denoising auto-encoder training steps
+--ae_steps 'en,fr|de,en|de,fr'                                # denoising auto-encoder training steps
 --bt_steps 'en-fr-en,fr-en-fr|de-en-de,en-de-en|de-fr-de,fr-de-fr'    # back-translation steps
 --word_shuffle 3                                              # noise for auto-encoding loss
 --word_dropout 0.1                                            # noise for auto-encoding loss
