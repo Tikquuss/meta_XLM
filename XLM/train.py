@@ -403,26 +403,38 @@ def main(params):
                         
                 # CLM steps
                 #print("clm_step", flag)
-                flag = trainer.clm_step(lang1_dic['clm_step'] , lang2_dic['clm_step'], params.lambda_clm, data_keys_dic['clm_step'])
+                a = trainer.clm_step(lang1_dic['clm_step'] , lang2_dic['clm_step'], params.lambda_clm, data_keys_dic['clm_step'])
                     
                 #print("mlm_step", flag)
                 # MLM steps (also includes TLM if lang2 is not None) 
-                flag = trainer.mlm_step(lang1_dic['mlm_step'] , lang2_dic['mlm_step'], params.lambda_mlm, data_keys_dic['mlm_step']) or flag
+                b = trainer.mlm_step(lang1_dic['mlm_step'] , lang2_dic['mlm_step'], params.lambda_mlm, data_keys_dic['mlm_step']) 
                    
                 # parallel classification steps
-                flag = trainer.pc_step(lang1_dic['pc_step'] , lang2_dic['pc_step'], params.lambda_pc, data_keys_dic['pc_step']) or flag
+                c = trainer.pc_step(lang1_dic['pc_step'] , lang2_dic['pc_step'], params.lambda_pc, data_keys_dic['pc_step']) 
                     
                 if isinstance(trainer, EncDecTrainer) :
-                        
+           
                     # denoising auto-encoder steps
-                    flag = trainer.mt_step(lang1_dic['ae_step'] , lang1_dic['ae_step'], params.lambda_ae, data_keys_dic['ae_step']) or flag
+                    d = trainer.mt_step(lang1_dic['ae_step'] , lang1_dic['ae_step'], params.lambda_ae, data_keys_dic['ae_step']) 
 
                     # machine translation steps    
-                    flag = trainer.mt_step(lang1_dic['mt_step'] , lang2_dic['mt_step'], params.lambda_mt, data_keys_dic['mt_step']) or flag
+                    e = trainer.mt_step(lang1_dic['mt_step'] , lang2_dic['mt_step'], params.lambda_mt, data_keys_dic['mt_step']) 
 
                     # back-translation steps
-                    flag = trainer.bt_step(lang1_dic['bt_step'] , lang2_dic['bt_step'], lang3_dic['bt_step'], params.lambda_bt, data_keys_dic['bt_step']) or flag    
+                    f = trainer.bt_step(lang1_dic['bt_step'] , lang2_dic['bt_step'], lang3_dic['bt_step'], params.lambda_bt, data_keys_dic['bt_step'])    
                     
+                    # do things better
+                    if (not a) and (not b) and (not c) and (not d) and (not e) and (not f) :
+                        flag = False # End of epoch
+                    else :
+                        flag = True
+                else :
+                    # do things better
+                    if (not a) and (not b) and (not c) :
+                        flag = False # End of epoch
+                    else :
+                        flag = True
+                        
                 trainer.iter()  
                         
         logger.info("============ End of epoch %i ============" % trainer.epoch)
