@@ -260,7 +260,7 @@ def main(params):
     
     # todo : good pad_index and eos_index and ... (I'll take the one from the first task for the moment.)
     """
-    But I think that if all the task data are based on the same vocabulary, all these parameters will be the same, 
+    But we think that if all the task data are based on the same vocabulary, all these parameters will be the same, 
     and therefore no problem if we choose one at random.
     """
     params.pad_index = p.pad_index
@@ -407,25 +407,21 @@ def main(params):
                     
                 #print("mlm_step", flag)
                 # MLM steps (also includes TLM if lang2 is not None) 
-                flag = flag or trainer.mlm_step(lang1_dic['mlm_step'] , lang2_dic['mlm_step'], params.lambda_mlm, data_keys_dic['mlm_step'])
-                    
-                #print("pc_step", flag)
+                flag = trainer.mlm_step(lang1_dic['mlm_step'] , lang2_dic['mlm_step'], params.lambda_mlm, data_keys_dic['mlm_step']) or flag
+                   
                 # parallel classification steps
-                flag = flag or trainer.pc_step(lang1_dic['pc_step'] , lang2_dic['pc_step'], params.lambda_pc, data_keys_dic['pc_step'])
+                flag = trainer.pc_step(lang1_dic['pc_step'] , lang2_dic['pc_step'], params.lambda_pc, data_keys_dic['pc_step']) or flag
                     
                 if isinstance(trainer, EncDecTrainer) :
                         
-                    #print("ae_step", flag)
                     # denoising auto-encoder steps
-                    flag = flag or trainer.mt_step(lang1_dic['ae_step'] , lang1_dic['ae_step'], params.lambda_ae, data_keys_dic['ae_step'])
+                    flag = trainer.mt_step(lang1_dic['ae_step'] , lang1_dic['ae_step'], params.lambda_ae, data_keys_dic['ae_step']) or flag
 
-                    #print("mt_step", flag)
                     # machine translation steps    
-                    flag = flag or trainer.mt_step(lang1_dic['mt_step'] , lang2_dic['mt_step'], params.lambda_mt, data_keys_dic['mt_step'])
+                    flag = trainer.mt_step(lang1_dic['mt_step'] , lang2_dic['mt_step'], params.lambda_mt, data_keys_dic['mt_step']) or flag
 
-                    #print("bt_step", flag)
                     # back-translation steps
-                    flag = flag or trainer.bt_step(lang1_dic['bt_step'] , lang2_dic['bt_step'], lang3_dic['bt_step'], params.lambda_bt, data_keys_dic['bt_step'])    
+                    flag = trainer.bt_step(lang1_dic['bt_step'] , lang2_dic['bt_step'], lang3_dic['bt_step'], params.lambda_bt, data_keys_dic['bt_step']) or flag    
                     
                 trainer.iter()  
                         
