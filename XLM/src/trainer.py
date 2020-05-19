@@ -321,7 +321,7 @@ class Trainer(object):
                 # todo : ?
                 s_iter = "%7i - " % self.n_total_iter
                 
-                stats = self.stats[lgs]
+                #stats = self.stats[lgs]
                 
                 s_stat = ' || '.join([
                     '{}: {:7.4f}'.format(k, np.mean(v)) for k, v in self.stats[lgs].items()
