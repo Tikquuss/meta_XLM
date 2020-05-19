@@ -315,6 +315,7 @@ class Trainer(object):
         
         else :
             # our
+            witness_time = 0
             for lgs in self.params.meta_params.keys() :
                 task = "task : " + lgs + " ||"
                 # todo : ?
@@ -323,13 +324,13 @@ class Trainer(object):
                 stats = self.stats[lgs]
                 
                 s_stat = ' || '.join([
-                    '{}: {:7.4f}'.format(k, np.mean(v)) for k, v in stats.items()
+                    '{}: {:7.4f}'.format(k, np.mean(v)) for k, v in self.stats[lgs].items()
                     if type(v) is list and len(v) > 0
                 ])
                 
-                for k in stats.keys():
-                    if type(stats[k]) is list:
-                        del stats[k][:]
+                for k in self.stats[lgs].keys():
+                    if type(self.stats[lgs][k]) is list:
+                        del self.stats[lgs][k][:]
 
                 # learning rates
                 s_lr = " - "
@@ -337,15 +338,17 @@ class Trainer(object):
                     s_lr = s_lr + (" - %s LR: " % k) + " / ".join("{:.4e}".format(group['lr']) for group in v.param_groups)
 
                 # processing speed
+                # our
                 new_time = time.time()
-                diff = new_time - self.last_time
+                diff = new_time - self.last_time + witness_time
                 s_speed = "{:7.2f} sent/s - {:8.2f} words/s - ".format(
-                    stats['processed_s'] * 1.0 / diff,
-                    stats['processed_w'] * 1.0 / diff
+                    self.stats[lgs]['processed_s'] * 1.0 / diff,
+                    self.stats[lgs]['processed_w'] * 1.0 / diff
                 )
-                stats['processed_s'] = 0
+                self.stats[lgs]['processed_s'] = 0
                 self.last_time = new_time
-
+                witness_time = diff
+                
                 # log speed + stats + learning rate
                 logger.info(task + s_iter + s_speed + s_stat + s_lr)
                 
