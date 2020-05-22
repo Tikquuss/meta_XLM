@@ -93,7 +93,8 @@ def get_data_from_bible(csv_path, output_dir, data_type = "para", langues=[], li
             samples = 0
             errors = 0
 
-            repertoire = output_dir+"/"+data_type
+            #repertoire = output_dir+"/"+data_type
+            repertoire = output_dir
             if not os.path.exists(repertoire):
                 os.makedirs(repertoire)
 
@@ -103,7 +104,8 @@ def get_data_from_bible(csv_path, output_dir, data_type = "para", langues=[], li
                     os.makedirs(repertoire)
                 repertoire = [repertoire + "/" + li + '-' + lj + "." for _ in range(2)]
             elif data_type == "mono":
-                repertoire = [repertoire + "/" + li, repertoire +"/"+ lj]
+                #repertoire = [repertoire + "/" + li, repertoire +"/"+ lj]
+                repertoire = [repertoire, repertoire]
                 for rep in repertoire :
                     if not os.path.exists(rep):
                         os.makedirs(rep)

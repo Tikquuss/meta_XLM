@@ -488,12 +488,8 @@ def main(params):
         
 # our
 def check_meta_learning_params(params) :
-    """
-    This method basically verifies if there is a meta-task that is not present in any objective (clm, mlm, pc, mt, ae, bt)
-    """
-    for lang, clm, mlm, pc, mt, ae, bt in zip(params.langs, params.clm_steps, params.mlm_steps, params.pc_steps, params.mt_steps, params.ae_steps, params.bt_steps) :       
-        assert not all([objectif == [] for objectif in [clm, mlm, pc, mt, ae, bt]]), "Every task must be present in some of objectif" 
-                                    
+    pass
+        
 if __name__ == '__main__':
 
     # generate parser / parse parameters
@@ -589,7 +585,6 @@ if __name__ == '__main__':
             params.data_path = data_path+"/"+lgs
         check_data_params(params)
         check_model_params(params)
-        
         
         params.meta_params[lgs] = copy.deepcopy(params)
         

@@ -218,6 +218,7 @@ class Trainer(object):
             for opt_name, optimizer in zip(opt_names, optimizers)
         }
 
+    # our : retain_graph params
     def optimize(self, loss, retain_graph=False):
         """
         Optimize.
@@ -357,32 +358,45 @@ class Trainer(object):
         """
         Create a new iterator for a dataset.
         """
-        
         # our
-        data = self.data
-        if data_key :
-            data = copy.deepcopy(data[data_key])
-            
-            
+
         logger.info("Creating new training data iterator (%s) ..." % ','.join([str(x) for x in [iter_name, lang1, lang2] if x is not None]))
         assert stream or not self.params.use_memory or not self.params.mem_query_batchnorm
-        if lang2 is None:
+        if lang2 is None:   
             if stream:
-                iterator = data['mono_stream'][lang1]['train'].get_iterator(shuffle=True)
+                if data_key :
+                    iterator = self.data[data_key]['mono_stream'][lang1]['train'].get_iterator(shuffle=True)
+                else :
+                    iterator = self.data['mono_stream'][lang1]['train'].get_iterator(shuffle=True)
             else:
-                iterator = data['mono'][lang1]['train'].get_iterator(
+                if data_key :
+                    iterator = self.data[data_key]['mono'][lang1]['train'].get_iterator(
+                        shuffle=True,
+                        group_by_size=self.params.group_by_size,
+                        n_sentences=-1,
+                    )
+                else :
+                    iterator = self.data['mono'][lang1]['train'].get_iterator(
+                        shuffle=True,
+                        group_by_size=self.params.group_by_size,
+                        n_sentences=-1,
+                    )
+                    
+        else:
+            assert stream is False
+            _lang1, _lang2 = (lang1, lang2) if lang1 < lang2 else (lang2, lang1)
+            if data_key :
+                iterator = self.data[data_key]['para'][(_lang1, _lang2)]['train'].get_iterator(
                     shuffle=True,
                     group_by_size=self.params.group_by_size,
                     n_sentences=-1,
                 )
-        else:
-            assert stream is False
-            _lang1, _lang2 = (lang1, lang2) if lang1 < lang2 else (lang2, lang1)
-            iterator = data['para'][(_lang1, _lang2)]['train'].get_iterator(
-                shuffle=True,
-                group_by_size=self.params.group_by_size,
-                n_sentences=-1,
-            )
+            else :
+                iterator = self.data['para'][(_lang1, _lang2)]['train'].get_iterator(
+                    shuffle=True,
+                    group_by_size=self.params.group_by_size,
+                    n_sentences=-1,
+                )
 
         self.iterators[(iter_name, lang1, lang2)] = iterator
         return iterator
@@ -392,9 +406,8 @@ class Trainer(object):
         Return a batch of sentences from a dataset.
         """
         # our
-        params = self.params
-        if data_key :
-            params = copy.deepcopy(self.params.meta_params[data_key])
+        #params = copy.deepcopy(self.params.meta_params[data_key]) if data_key else self.params
+        params = self.params.meta_params[data_key] if data_key else self.params
              
         assert lang1 in params.langs
         assert lang2 is None or lang2 in params.langs
@@ -470,9 +483,8 @@ class Trainer(object):
         Randomly blank input words.
         """
         # our
-        params = self.params
-        if data_key :
-            params = copy.deepcopy(self.params.meta_params[data_key])
+        #params = copy.deepcopy(self.params.meta_params[data_key]) if data_key else self.params
+        params = self.params.meta_params[data_key] if data_key else self.params
         try :
             params.mask_index
         except :
@@ -520,15 +532,15 @@ class Trainer(object):
         """
         
         # our
-        params = self.params
+        #params = copy.deepcopy(self.params.meta_params[data_key]) if data_key else self.params
+        params = self.params.meta_params[data_key] if data_key else self.params
         if data_key :
-            params = copy.deepcopy(self.params.meta_params[data_key])
             # todo
             params.pred_probs = self.params.pred_probs
         else :
             # todo : correct it
             """
-            But I think that if all the task data are based on the same vocabulary, all these parameters will be the same, 
+            But we think that if all the task data are based on the same vocabulary, all these parameters will be the same, 
             and therefore no problem if we choose one at random.
             """
             k = list(self.params.meta_params.keys())[0]
@@ -584,9 +596,8 @@ class Trainer(object):
         """
     
         # our
-        params = self.params
-        if data_key :
-            params = copy.deepcopy(self.params.meta_params[data_key])
+        #params = copy.deepcopy(self.params.meta_params[data_key]) if data_key else self.params
+        params = self.params.meta_params[data_key] if data_key else self.params
         
         lang1_id = params.lang2id[lang1]
         lang2_id = params.lang2id[lang2] if lang2 is not None else None
@@ -810,10 +821,11 @@ class Trainer(object):
             self.n_sentences += params.batch_size
             self.stats['processed_s'] += lengths.size(0)
             self.stats['processed_w'] += pred_mask.sum().item()
+            
         else :
             
             total_loss = 0
-            optimize_total_loss = False
+            optimize_total_loss = 0
             
             # equivalent to "for task in list of task" in the original algorithm
             for lang1, lang2, data_key in zip(lang1, lang2, data_keys) :
@@ -823,7 +835,7 @@ class Trainer(object):
                 
                 if self.n_sentences[data_key] < params.meta_params[data_key].epoch_size :
                     
-                    optimize_total_loss = True 
+                    optimize_total_loss += 1 
                 
                     # generate batch / select words to predict
                     x, lengths, positions, langs, _ = self.generate_batch(lang1, lang2, 'causal', data_key = data_key)
@@ -861,8 +873,12 @@ class Trainer(object):
                     self.stats[data_key]['processed_s'] += lengths.size(0)
                     self.stats[data_key]['processed_w'] += pred_mask.sum().item()
                 
-            if optimize_total_loss : 
+            if optimize_total_loss != 0 : 
+                # todo : ablation study
                 self.optimize(total_loss)
+                #self.optimize(total_loss/optimize_total_loss)
+                #self.optimize(lambda_coeff * total_loss)
+                #self.optimize(lambda_coeff * (total_loss/optimize_total_loss))
                 return True
             else :
                 return False
@@ -911,7 +927,7 @@ class Trainer(object):
             # our
                 
             total_loss = 0
-            optimize_total_loss = False
+            optimize_total_loss = 0
             
             # equivalent to "for task in list of task" in the original algorithm
             for lang1, lang2, data_key in zip(lang1, lang2, data_keys) :
@@ -921,7 +937,7 @@ class Trainer(object):
                 
                 if self.n_sentences[data_key] < params.meta_params[data_key].epoch_size :
                     
-                    optimize_total_loss = True
+                    optimize_total_loss += 1 
                 
                     # generate batch / select words to predict
                     x, lengths, positions, langs, _ = self.generate_batch(lang1, lang2, 'pred', data_key = data_key)
@@ -953,8 +969,12 @@ class Trainer(object):
                     self.stats[data_key]['processed_s'] += lengths.size(0)
                     self.stats[data_key]['processed_w'] += pred_mask.sum().item()
             
-            if optimize_total_loss : 
+            if optimize_total_loss != 0 : 
+                # todo : ablation study
                 self.optimize(total_loss)
+                #self.optimize(total_loss/optimize_total_loss)
+                #self.optimize(lambda_coeff * total_loss)
+                #self.optimize(lambda_coeff * (total_loss/optimize_total_loss))
                 return True
             else :
                 return False
@@ -1021,7 +1041,7 @@ class Trainer(object):
             # todo : test it
              
             total_loss = 0
-            optimize_total_loss = False
+            optimize_total_loss = 0
             
             # equivalent to "for task in list of task" in the original algorithm
             for lang1, lang2, data_key in zip(lang1, lang2, data_keys) :
@@ -1033,7 +1053,7 @@ class Trainer(object):
                 
                 if self.n_sentences[data_key] < params_.epoch_size :
                     
-                    optimize_total_loss = True
+                    optimize_total_loss += 1
                     
                     lang1_id = params_.lang2id[lang1]
                     lang2_id = params_.lang2id[lang2]
@@ -1084,8 +1104,12 @@ class Trainer(object):
                     self.stats[data_key]['processed_s'] += bs
                     self.stats[data_key]['processed_w'] += lengths.sum().item()
 
-            if optimize_total_loss : 
+            if optimize_total_loss != 0 : 
+                # todo : ablation study
                 self.optimize(total_loss)
+                #self.optimize(total_loss/optimize_total_loss)
+                #self.optimize(lambda_coeff * total_loss)
+                #self.optimize(lambda_coeff * (total_loss/optimize_total_loss))
                 return True
             else :
                 return False
@@ -1178,7 +1202,7 @@ class EncDecTrainer(Trainer):
             # our
             
             total_loss = 0
-            optimize_total_loss = False
+            optimize_total_loss = 0
             
             # equivalent to "for task in list of task" in the original algorithm
             for lang1, lang2, data_key in zip(lang1, lang2, data_keys) :
@@ -1190,7 +1214,7 @@ class EncDecTrainer(Trainer):
                 
                 if self.n_sentences[data_key] < params_.epoch_size :
                     
-                    optimize_total_loss = True
+                    optimize_total_loss += 1
                     
                     lang1_id = params_.lang2id[lang1]
                     lang2_id = params_.lang2id[lang2]
@@ -1243,8 +1267,12 @@ class EncDecTrainer(Trainer):
                     self.stats[data_key]['processed_s'] += len2.size(0)
                     self.stats[data_key]['processed_w'] += (len2 - 1).sum().item()
                     
-            if optimize_total_loss : 
+            if optimize_total_loss != 0 : 
+                # todo : ablation study
                 self.optimize(total_loss)
+                #self.optimize(total_loss/optimize_total_loss)
+                #self.optimize(lambda_coeff * total_loss)
+                #self.optimize(lambda_coeff * (total_loss/optimize_total_loss))
                 return True
             else :
                 return False
@@ -1321,7 +1349,7 @@ class EncDecTrainer(Trainer):
         else :
             
             total_loss = 0
-            optimize_total_loss = False
+            optimize_total_loss = 0
             
             # equivalent to "for task in list of task" in the original algorithm
             for lang1, lang2, lang3, data_key in zip(lang1, lang2, lang3, data_keys) :
@@ -1333,7 +1361,7 @@ class EncDecTrainer(Trainer):
                 
                 if self.n_sentences[data_key] < params_.epoch_size :
                     
-                    optimize_total_loss = True
+                    optimize_total_loss += 1
                     
                     lang1_id = params_.lang2id[lang1]
                     lang2_id = params_.lang2id[lang2]
@@ -1400,8 +1428,12 @@ class EncDecTrainer(Trainer):
                     self.stats[data_key]['processed_w'] += (len1 - 1).sum().item()
                     
                     
-            if optimize_total_loss : 
+            if optimize_total_loss != 0 : 
+                # todo : ablation study
                 self.optimize(total_loss)
+                #self.optimize(total_loss/optimize_total_loss)
+                #self.optimize(lambda_coeff * total_loss)
+                #self.optimize(lambda_coeff * (total_loss/optimize_total_loss))
                 return True
             else :
                 return False

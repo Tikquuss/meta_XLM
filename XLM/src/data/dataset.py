@@ -10,6 +10,8 @@ import math
 import numpy as np
 import torch
 
+# our : Allows you to see if the right data is used at the right time during metaLearning
+debug = 1
 
 logger = getLogger()
 
@@ -20,6 +22,12 @@ class StreamDataset(object):
         """
         Prepare batches for data iterator.
         """
+        # our
+        global debug
+        self.debug = debug
+        debug = debug + 1
+        logger.info("========================== debug : %s" % self.debug)
+        
         bptt = params.bptt
         self.eos = params.eos_index
 
@@ -71,6 +79,7 @@ class StreamDataset(object):
         """
         Return a sentences iterator.
         """
+        #logger.info("========================== debug : %s" % self.debug)
         indexes = (np.random.permutation if shuffle else range)(self.n_batches // subsample)
         for i in indexes:
             a = self.bptt * i
@@ -82,6 +91,12 @@ class Dataset(object):
 
     def __init__(self, sent, pos, params):
 
+        # our 
+        global debug
+        self.debug = debug
+        debug = debug + 1
+        logger.info("========================== debug : %s" % self.debug)
+        
         self.eos_index = params.eos_index
         self.pad_index = params.pad_index
         self.batch_size = params.batch_size
@@ -199,6 +214,9 @@ class Dataset(object):
         """
         Return a sentences iterator.
         """
+        # our 
+        #logger.info("========================== debug : %s" % self.debug)
+        
         assert seed is None or shuffle is True and type(seed) is int
         rng = np.random.RandomState(seed)
         n_sentences = len(self.pos) if n_sentences == -1 else n_sentences
@@ -245,7 +263,13 @@ class Dataset(object):
 class ParallelDataset(Dataset):
 
     def __init__(self, sent1, pos1, sent2, pos2, params):
-
+        
+        # our 
+        global debug
+        self.debug = debug
+        debug = debug + 1
+        logger.info("========================== debug : %s" % self.debug)
+        
         self.eos_index = params.eos_index
         self.pad_index = params.pad_index
         self.batch_size = params.batch_size
@@ -367,6 +391,10 @@ class ParallelDataset(Dataset):
         """
         Return a sentences iterator.
         """
+        
+        # our
+        #logger.info("========================== debug : %s" % self.debug)
+        
         n_sentences = len(self.pos1) if n_sentences == -1 else n_sentences
         assert 0 < n_sentences <= len(self.pos1)
         assert type(shuffle) is bool and type(group_by_size) is bool

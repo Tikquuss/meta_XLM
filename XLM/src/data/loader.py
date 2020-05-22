@@ -258,12 +258,13 @@ def load_para_data(params, data):
     logger.info("")
 
 
-def check_data_params(params):
+def check_data_params(params, check_only_objectifs = False):
     """
     Check datasets parameters.
     """
     # data path
-    assert os.path.isdir(params.data_path), params.data_path
+    if not check_only_objectifs :
+        assert os.path.isdir(params.data_path), params.data_path
 
     # check languages
     params.langs = params.lgs.split('-') if params.lgs != 'debug' else ['en']
@@ -315,39 +316,40 @@ def check_data_params(params):
     assert len(params.bt_steps) == 0 or not params.encoder_only
     params.bt_src_langs = [l1 for l1, _, _ in params.bt_steps]
 
-    # check monolingual datasets
-    required_mono = set([l1 for l1, l2 in (params.mlm_steps + params.clm_steps) if l2 is None] + params.ae_steps + params.bt_src_langs)
-    params.mono_dataset = {
-        lang: {
-            splt: os.path.join(params.data_path, '%s.%s.pth' % (splt, lang))
-            for splt in ['train', 'valid', 'test']
-        } for lang in params.langs if lang in required_mono
-    }
-    for paths in params.mono_dataset.values():
-        for p in paths.values():
-            if not os.path.isfile(p):
-                logger.error(f"{p} not found")
-    assert all([all([os.path.isfile(p) for p in paths.values()]) for paths in params.mono_dataset.values()])
+    if not check_only_objectifs :
+        # check monolingual datasets
+        required_mono = set([l1 for l1, l2 in (params.mlm_steps + params.clm_steps) if l2 is None] + params.ae_steps + params.bt_src_langs)
+        params.mono_dataset = {
+            lang: {
+                splt: os.path.join(params.data_path, '%s.%s.pth' % (splt, lang))
+                for splt in ['train', 'valid', 'test']
+            } for lang in params.langs if lang in required_mono
+        }
+        for paths in params.mono_dataset.values():
+            for p in paths.values():
+                if not os.path.isfile(p):
+                    logger.error(f"{p} not found")
+        assert all([all([os.path.isfile(p) for p in paths.values()]) for paths in params.mono_dataset.values()])
 
-    # check parallel datasets
-    required_para_train = set(params.clm_steps + params.mlm_steps + params.pc_steps + params.mt_steps)
-    required_para = required_para_train | set([(l2, l3) for _, l2, l3 in params.bt_steps])
-    params.para_dataset = {
-        (src, tgt): {
-            splt: (os.path.join(params.data_path, '%s.%s-%s.%s.pth' % (splt, src, tgt, src)),
-                   os.path.join(params.data_path, '%s.%s-%s.%s.pth' % (splt, src, tgt, tgt)))
-            for splt in ['train', 'valid', 'test']
-            if splt != 'train' or (src, tgt) in required_para_train or (tgt, src) in required_para_train
-        } for src in params.langs for tgt in params.langs
-        if src < tgt and ((src, tgt) in required_para or (tgt, src) in required_para)
-    }
-    for paths in params.para_dataset.values():
-        for p1, p2 in paths.values():
-            if not os.path.isfile(p1):
-                logger.error(f"{p1} not found")
-            if not os.path.isfile(p2):
-                logger.error(f"{p2} not found")
-    assert all([all([os.path.isfile(p1) and os.path.isfile(p2) for p1, p2 in paths.values()]) for paths in params.para_dataset.values()])
+        # check parallel datasets
+        required_para_train = set(params.clm_steps + params.mlm_steps + params.pc_steps + params.mt_steps)
+        required_para = required_para_train | set([(l2, l3) for _, l2, l3 in params.bt_steps])
+        params.para_dataset = {
+            (src, tgt): {
+                splt: (os.path.join(params.data_path, '%s.%s-%s.%s.pth' % (splt, src, tgt, src)),
+                       os.path.join(params.data_path, '%s.%s-%s.%s.pth' % (splt, src, tgt, tgt)))
+                for splt in ['train', 'valid', 'test']
+                if splt != 'train' or (src, tgt) in required_para_train or (tgt, src) in required_para_train
+            } for src in params.langs for tgt in params.langs
+            if src < tgt and ((src, tgt) in required_para or (tgt, src) in required_para)
+        }
+        for paths in params.para_dataset.values():
+            for p1, p2 in paths.values():
+                if not os.path.isfile(p1):
+                    logger.error(f"{p1} not found")
+                if not os.path.isfile(p2):
+                    logger.error(f"{p2} not found")
+        assert all([all([os.path.isfile(p1) and os.path.isfile(p2) for p1, p2 in paths.values()]) for paths in params.para_dataset.values()])
 
     # check that we can evaluate on BLEU
     assert params.eval_bleu is False or len(params.mt_steps + params.bt_steps) > 0
@@ -371,11 +373,11 @@ def load_data(params):
     
         # monolingual datasets
         load_mono_data(params = valeur, data = data[lgs])
-
+        
         # parallel datasets
         valeur.n_gpu_per_node = params.n_gpu_per_node
         load_para_data(params = valeur, data = data[lgs])
-
+        
         # monolingual data summary
         logger.info('============ Data summary')
         for lang, v in data[lgs]['mono_stream'].items():
@@ -391,9 +393,20 @@ def load_data(params):
     
     # if only one language (so only one meta-tack), no metalearning
     if not params.meta_learning :
-        data = data[list(data.keys())[0]]
+        key = list(data.keys())[0]
+        data = data[key]
+        data['key'] = key
     else :
         # todo : le meta_dico doit etre commun à tout les corpus
-        data['dico'] = data[list(data.keys())[0]]['dico']
-    
+        """
+        But we think that if all the task data are based on the same vocabulary, all these parameters will be the same, 
+        and therefore no problem if we choose one at random.
+        """
+        for key in data.keys() :
+            try :
+                data['dico'] = data[key]['dico']
+                data['key'] = key
+                break
+            except :
+                pass
     return data

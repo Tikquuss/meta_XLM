@@ -105,12 +105,9 @@ class Evaluator(object):
         Create a new iterator for a dataset.
         """
         
-        # todo : commenter
-        params = self.params
-        data = self.data
-        if data_key :
-            params = copy.deepcopy(self.params.meta_params[data_key])
-            data = copy.deepcopy(data[data_key])
+        # our
+        #params = copy.deepcopy(self.params.meta_params[data_key]) if data_key else self.params
+        params = self.params.meta_params[data_key] if data_key else self.params
         
         assert data_set in ['valid', 'test']
         assert lang1 in params.langs
@@ -133,21 +130,38 @@ class Evaluator(object):
             
         if lang2 is None:
             if stream:
-                iterator = data['mono_stream'][lang1][data_set].get_iterator(shuffle=False, subsample=subsample)
+                if data_key :
+                    iterator = self.data[data_key]['mono_stream'][lang1][data_set].get_iterator(shuffle=False, subsample=subsample)
+                else :
+                    iterator = self.data['mono_stream'][lang1][data_set].get_iterator(shuffle=False, subsample=subsample)
             else:
-                iterator = data['mono'][lang1][data_set].get_iterator(
-                    shuffle=False,
-                    group_by_size=True,
-                    n_sentences=n_sentences,
-                )
+                if data_key :
+                    iterator = self.data[data_key]['mono'][lang1][data_set].get_iterator(
+                        shuffle=False,
+                        group_by_size=True,
+                        n_sentences=n_sentences,
+                    )
+                else :
+                    iterator = self.data['mono'][lang1][data_set].get_iterator(
+                        shuffle=False,
+                        group_by_size=True,
+                        n_sentences=n_sentences,
+                    )            
         else:
             assert stream is False
             _lang1, _lang2 = (lang1, lang2) if lang1 < lang2 else (lang2, lang1)
-            iterator = data['para'][(_lang1, _lang2)][data_set].get_iterator(
-                shuffle=False,
-                group_by_size=True,
-                n_sentences=n_sentences
-            )
+            if data_key :
+                iterator = self.data[data_key]['para'][(_lang1, _lang2)][data_set].get_iterator(
+                    shuffle=False,
+                    group_by_size=True,
+                    n_sentences=n_sentences
+                )
+            else :
+                iterator = self.data['para'][(_lang1, _lang2)][data_set].get_iterator(
+                    shuffle=False,
+                    group_by_size=True,
+                    n_sentences=n_sentences
+                )
 
         for batch in iterator:
             yield batch if lang2 is None or lang1 < lang2 else batch[::-1]
@@ -239,7 +253,6 @@ class Evaluator(object):
                             restore_segmentation(lang1_path)
                             restore_segmentation(lang2_path)
                 except Exception as e:
-                    print("Exception", e)
                     pass
             
     def mask_out(self, x, lengths, rng, data_key = None):
@@ -247,9 +260,10 @@ class Evaluator(object):
         Decide of random words to mask out.
         We specify the random generator to ensure that the test is the same at each epoch.
         """
-        params = self.params
+        # our
         if data_key :
-            params = copy.deepcopy(self.params.meta_params[data_key])
+            #params = copy.deepcopy(self.params.meta_params[data_key])
+            params = self.params.meta_params[data_key]
             # todo
             params.pred_probs = self.params.pred_probs
             
@@ -379,23 +393,29 @@ class Evaluator(object):
                     elif (not (l1 is None)) and (l2 is None) :
                         langs.append(l1)
                     elif (not (l1 is None)) and (not (l2 is None)) :
-                        langs.append(l1+"_"+l2)    
+                        langs.append(l1+"_"+l2)   
+                        
                 # removes duplicates
                 langs = list(set(langs))
                     
                 for data_set in ['valid', 'test'] :
                     for value in values :
-                        scores[data_key]['task_(%s)_%s_%s_%s' % (data_key, data_set, objectif, value)] = np.mean(
-                            [scores[data_key]['%s_%s_%s_%s' % (data_set, lang, objectif, value)] for lang in langs]
-                        )
-                
+                        a = [scores[data_key]['%s_%s_%s_%s' % (data_set, lang, objectif, value)] 
+                             for lang in langs
+                             if '%s_%s_%s_%s' % (data_set, lang, objectif, value) in scores[data_key].keys()
+                            ]
+                        if a != [] :
+                            scores[data_key]['task_(%s)_%s_%s_%s' % (data_key, data_set, objectif, value)] = np.mean(a)
+                        
             for data_set in ['valid', 'test'] :
                 # Right now we are averaging the values for each task. 
                 # todo : Do a study to see how to weight the coefficients of this average (average weighted by the coefficients not all equal). 
                 for value in values :
                     scores['%s_%s_%s' % (data_set, objectif, value)] =  np.mean(
                         [
-                            scores[data_key]['task_(%s)_%s_%s_%s' % (data_key, data_set, objectif, value)] for data_key in params.meta_params.keys()    
+                            scores[data_key]['task_(%s)_%s_%s_%s' % (data_key, data_set, objectif, value)] 
+                            for data_key in params.meta_params.keys()  
+                            if 'task_(%s)_%s_%s_%s' % (data_key, data_set, objectif, value) in scores[data_key].keys()
                         ]
                     )
          
@@ -405,18 +425,20 @@ class Evaluator(object):
             eval_bleu = params.eval_bleu and params.is_master
             values = ['ppl', 'acc'] + (['bleu'] if eval_bleu else [])
                 
-            for data_key in params.meta_params.keys() :
-                    
-                langs = data_key.split('-')
-                langs = [data_key, langs[1]+"-"+langs[0]]
-                    
+            for data_key, params_ in params.meta_params.items() :
+                 
+                langs = [lang1+"-"+lang2 for lang1, lang2 in set(params_.mt_steps + [(l2, l3) for _, l2, l3 in params_.bt_steps])]
+                                      
                 for data_set in ['valid', 'test'] :
                     for value in values :
-                        scores[data_key]['task_(%s)_%s_mt_%s' % (data_key, data_set, value)] = np.mean(
-                            [scores[data_key]['%s_%s_mt_%s' % (data_set, lang, value)] for lang in langs]
-                        )
                         #scores[data_key]['%s_mt_%s' % (data_set, value)] = scores[data_key]['task_(%s)_%s_mt_%s' % (data_key, data_set, value)]
-        
+                        a = [scores[data_key]['%s_%s_mt_%s' % (data_set, lang, value)] 
+                             for lang in langs 
+                             if '%s_%s_mt_%s' % (data_set, lang, value) in scores[data_key].keys()
+                            ]
+                        if a != [] :
+                            scores[data_key]['task_(%s)_%s_mt_%s' % (data_key, data_set, value)] = np.mean(a)
+                    
             for data_set in ['valid', 'test'] :
                 # Right now we are averaging the values for each task. 
                 # todo : Do a study later to see how to weight the coefficients of this average (average weighted by the coefficients not all equal). 
@@ -424,7 +446,9 @@ class Evaluator(object):
                     scores['%s_mt_%s' % (data_set, value)] =  np.mean(
                         [
                             #scores[data_key]['%s_mt_%s' % (data_set, value)] for data_key in params.meta_params.keys()
-                            scores[data_key]['task_(%s)_%s_mt_%s' % (data_key, data_set, value)] for data_key in params.meta_params.keys()   
+                            scores[data_key]['task_(%s)_%s_mt_%s' % (data_key, data_set, value)] 
+                            for data_key in params.meta_params.keys()   
+                            if 'task_(%s)_%s_mt_%s' % (data_key, data_set, value) in scores[data_key].keys()
                         ]
                     )
                     
@@ -515,7 +539,8 @@ class Evaluator(object):
         """
         params = self.params
         if data_key :
-            params = copy.deepcopy(self.params.meta_params[data_key])
+            #params = copy.deepcopy(self.params.meta_params[data_key])
+            params = self.params.meta_params[data_key]
             # todo ??
             params.multi_gpu = self.params.multi_gpu
             
@@ -616,7 +641,8 @@ class EncDecEvaluator(Evaluator):
         # our
         params = self.params
         if data_key :
-            params = copy.deepcopy(self.params.meta_params[data_key])
+            #params = copy.deepcopy(self.params.meta_params[data_key])
+            params = self.params.meta_params[data_key]
             # todo ??
             params.multi_gpu = self.params.multi_gpu
             params.hyp_path = self.params.hyp_path
