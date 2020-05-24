@@ -12,6 +12,14 @@ import argparse
 import os
 import csv
 
+abrevition = {
+    "Francais":"fr", "Anglais":"en"
+    #"ar", "bg", "de", "el", "en", "es", "fr", "hi", "ru", "sw", "th", "tr", "ur", "vi", "zh", "ab", "ay", "bug", "ha", "ko", 
+    #"ln", "min", "nds", "pap", "pt", "tg", "to", "udm", "uk", "zh_classical"
+}
+
+eval_lgs = set([])
+
 livres_all = [
     # Old Testament
     'GEN.', 'EXO.', 'LEV.', 'NUM.', 'DEU.', 'JOS.', 'JDG.', 'RUT.',   '1SA.', '2SA.', '1KI.', '2KI.', 
@@ -60,6 +68,12 @@ def get_parser():
     
     return parser
 
+def get_abreviation(lang_name):
+    try :
+        return abrevition[lang_name]
+    except KeyError :
+        return lang_name
+    
 def get_data_from_bible(csv_path, output_dir, data_type = "para", langues=[], livres=[], cell_error = "__Error__"):
     """
     csv_path : folder containing the csvs folder
@@ -93,26 +107,36 @@ def get_data_from_bible(csv_path, output_dir, data_type = "para", langues=[], li
             samples = 0
             errors = 0
 
+            li_abrev_temp = get_abreviation(li)
+            lj_abrev_temp = get_abreviation(lj)
+            abrev = sorted([li_abrev_temp, lj_abrev_temp])
+            li_abrev = abrev[0]
+            lj_abrev = abrev[1]
             #repertoire = output_dir+"/"+data_type
             repertoire = output_dir
             if not os.path.exists(repertoire):
                 os.makedirs(repertoire)
 
             if data_type == "para":
-                repertoire = repertoire +"/"+ li +'-'+ lj
+                repertoire = repertoire +"/"+ li_abrev +'-'+ lj_abrev
                 if not os.path.exists(repertoire):
                     os.makedirs(repertoire)
-                repertoire = [repertoire + "/" + li + '-' + lj + "." for _ in range(2)]
+                repertoire = [repertoire + "/" + li_abrev + '-' + lj_abrev + "." for _ in range(2)]
             elif data_type == "mono":
-                #repertoire = [repertoire + "/" + li, repertoire +"/"+ lj]
+                #repertoire = [repertoire + "/" + li_abrev, repertoire +"/"+ lj_abrev]
                 repertoire = [repertoire, repertoire]
                 for rep in repertoire :
                     if not os.path.exists(rep):
                         os.makedirs(rep)
                 repertoire = [r +"/" for r in repertoire]
-            
-            with open(repertoire[0] + li + '.txt', 'w') as txtfile1:
-                with open(repertoire[1] + lj + '.txt', 'w') as txtfile2:
+                
+            if li_abrev_temp == li_abrev:
+                li_abrev, lj_abrev = repertoire[0] + li_abrev + '.txt', repertoire[1] + lj_abrev + '.txt'
+            else :
+                lj_abrev, li_abrev = repertoire[0] + li_abrev + '.txt', repertoire[1] + lj_abrev + '.txt'
+                
+            with open(li_abrev, 'w') as txtfile1:
+                with open(lj_abrev, 'w') as txtfile2:
             
                     for fichier in livres:
                         try :
