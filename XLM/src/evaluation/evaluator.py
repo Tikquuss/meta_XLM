@@ -261,6 +261,7 @@ class Evaluator(object):
         We specify the random generator to ensure that the test is the same at each epoch.
         """
         # our
+        params = self.params
         if data_key :
             #params = copy.deepcopy(self.params.meta_params[data_key])
             params = self.params.meta_params[data_key]
