@@ -12,13 +12,11 @@ import argparse
 import os
 import csv
 
-abrevition = {
+abreviation = {
     "Francais":"fr", "Anglais":"en"
     #"ar", "bg", "de", "el", "en", "es", "fr", "hi", "ru", "sw", "th", "tr", "ur", "vi", "zh", "ab", "ay", "bug", "ha", "ko", 
     #"ln", "min", "nds", "pap", "pt", "tg", "to", "udm", "uk", "zh_classical"
 }
-
-eval_lgs = set([])
 
 livres_all = [
     # Old Testament
@@ -70,7 +68,7 @@ def get_parser():
 
 def get_abreviation(lang_name):
     try :
-        return abrevition[lang_name]
+        return abreviation[lang_name]
     except KeyError :
         return lang_name
     

@@ -7,7 +7,7 @@
 
 import json
 import random
-import argparse
+import argparse 
 
 # our
 import copy
@@ -230,6 +230,9 @@ def get_parser():
                         help="remove long sentences in valid dataset")
     parser.add_argument("--remove_long_sentences_test", type=bool_flag, default=False, 
                         help="remove long sentences in test dataset")
+    
+    parser.add_argument("--same_data_path", type=bool_flag, default=True, 
+                        help="In the case of metalearning, this parameter, when passed to False, the data are searched for each task in a folder with the name of the task and located in data_path, otherwise all the data are searched in data_path.")
 
     return parser
 
@@ -269,8 +272,12 @@ def main(params):
     But we think that if all the task data are based on the same vocabulary, all these parameters will be the same, 
     and therefore no problem if we choose one at random.
     """
-    params.pad_index = p.pad_index
+    params.n_words = p.n_words
+    params.bos_index = p.bos_index
     params.eos_index = p.eos_index
+    params.pad_index = p.pad_index
+    params.unk_index = p.unk_index
+    params.mask_index = p.mask_index
 
     # build trainer, reload potential checkpoints / build evaluator
     if params.encoder_only:
@@ -302,7 +309,7 @@ def main(params):
 
     # set sampling probabilities for training
     set_sampling_probs(data, params)
-
+    
     # language model training
     for _ in range(params.max_epoch):
 
@@ -434,7 +441,7 @@ def main(params):
            
                     # denoising auto-encoder steps
                     d = trainer.mt_step(lang1_dic['ae_step'] , lang1_dic['ae_step'], params.lambda_ae, data_keys_dic['ae_step']) 
-
+                    
                     # machine translation steps    
                     e = trainer.mt_step(lang1_dic['mt_step'] , lang2_dic['mt_step'], params.lambda_mt, data_keys_dic['mt_step']) 
 
@@ -585,8 +592,9 @@ if __name__ == '__main__':
         params.ae_steps = ae    
         params.bt_steps = bt 
         
-        if params.meta_learning :
+        if params.meta_learning and not params.same_data_path:
             params.data_path = data_path+"/"+lgs
+    
         check_data_params(params)
         check_model_params(params)
         
