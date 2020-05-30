@@ -11,6 +11,7 @@ cell_error (optional, defautlt = "__Error__") : text to be used to mark erroneou
 import argparse
 import os
 import csv
+from XLM.src.utils import bool_flag
 
 abreviation = {
     "Francais":"fr", "Anglais":"en"
@@ -18,18 +19,22 @@ abreviation = {
     #"ln", "min", "nds", "pap", "pt", "tg", "to", "udm", "uk", "zh_classical"
 }
 
-livres_all = [
+livres_ot = [
     # Old Testament
     'GEN.', 'EXO.', 'LEV.', 'NUM.', 'DEU.', 'JOS.', 'JDG.', 'RUT.',   '1SA.', '2SA.', '1KI.', '2KI.', 
     '1CH.', '2CH.', 'EZR.', 'NEH.', 'EST.', 'JOB.', 'PSA.', 'PRO.', 'ECC.', 'SNG.',  'ISA.', 'JER.', 
     'LAM.', 'EZK.', 'DAN.', 'HOS.', 'JOL.', 'AMO.', 'OBA.', 'JON.', 'MIC.', 'NAM.', 'HAB.', 'ZEP.', 
-    'HAG.', 'ZEC.', 'MAL.',
+    'HAG.', 'ZEC.', 'MAL.'
+]
 
+livres_nt = [
     # New Testament
     'MAT.', 'MRK.', 'LUK.', 'JHN.', 'ACT.', 'ROM.', '1CO.', '2CO.', 'GAL.', 'EPH.', 'PHP.', 'COL.', 
     '1TH.', '2TH.', '1TI.', '2TI.', 'TIT.', 'PHM.', 'HEB.', 'JAS.', '1PE.',  '2PE.', '1JN.', '2JN.', 
     '3JN.', 'JUD.', 'REV.'
 ]
+
+livres_all = livres_ot + livres_nt
 
 # languages present in the old testament 
 langues_at = [
@@ -63,6 +68,8 @@ def get_parser():
     parser.add_argument("--languages", type=str, default="", help="list of languages to be considered in alphabetical order and separated by a comma : e.g. 'Bafia,Bulu,Ewondo'. (these languages must be included in the list of languages above)")
     parser.add_argument("--books", type=str, default="", help="list of the books of the bibles to be considered separated by a comma (there must exist for each of these books a books.csv file in ../csvs/)")
     parser.add_argument("--cell_error", type=str, default="__Error__", help="text to be used to mark erroneous text pairs during webscrapping (these pairs are excluded from the data).")
+    parser.add_argument("--old_only", type=bool_flag, default=False, help="use only old testament")
+    parser.add_argument("--new_only", type=bool_flag, default=False, help="use only new testament")
     
     return parser
 
@@ -193,13 +200,18 @@ if __name__ == '__main__':
     # check parameters
     assert os.path.isdir(params.csv_path), "csv path not found"
     assert params.data_type in ["para", "mono"], "Invalid data type"
+    assert not params.old_only or not params.new_only
 
     if params.books.replace(" ", "") != "" :
         params.books = params.books.split(",")
         assert all([book in livres_all for book in params.books]), "Invalid books"
     else :
         params.books = []
-
+    if params.old_only :
+        params.books = livres_ot
+    if params.new_only :
+        params.books = livres_nt
+        
     if params.languages.replace(" ", "") != "" :
         params.languages = params.languages.split(",")
         assert all([(language in langues_nt) for language in params.languages]), "Invalid languages"

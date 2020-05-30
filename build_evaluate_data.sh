@@ -12,6 +12,7 @@
 #   val_size
 #   FASTBPE
 #   CODE_VOCAB_PATH
+#   duplicate
 
 set -e
 
@@ -75,15 +76,25 @@ split_data() {
     shuf --random-source=<(get_seeded_random 42) $1 | tail -$NTEST                            > $4;
 }
 
-split_data $src_path/$lg.all $src_path/train.$lg $src_path/valid.$lg $src_path/test.$lg $test_size $val_size
-
 if [ ! -d $tgt_path ]; then
     mkdir $tgt_path
 fi
+    
+if [ $duplicate = True ]; then
+    $FASTBPE applybpe $tgt_path/test.$lg $src_path/$lg.all $CODE_VOCAB_PATH/codes 
+    python preprocess.py $CODE_VOCAB_PATH/vocab $tgt_path/test.$lg
+    cp $tgt_path/test.$lg.pth $tgt_path/valid.$lg.pth
+else
+    if [ ! -f $src_path/train.$lg ]; then
+        split_data $src_path/$lg.all $src_path/train.$lg $src_path/valid.$lg $src_path/test.$lg $test_size $val_size
+    fi
 
-echo -e "\n"
-echo "***Apply BPE tokenization on the corpora and binarize everything using preprocess.py.***"
-for split in train valid test; do
-   $FASTBPE applybpe $tgt_path/$split.$lg $src_path/$split.$lg $CODE_VOCAB_PATH/codes 
-   python preprocess.py $CODE_VOCAB_PATH/vocab $tgt_path/$split.$lg
-done
+    echo -e "\n"
+    echo "***Apply BPE tokenization on the corpora and binarize everything using preprocess.py.***"
+    #for split in train valid test; do
+    for split in valid test; do
+       $FASTBPE applybpe $tgt_path/$split.$lg $src_path/$split.$lg $CODE_VOCAB_PATH/codes 
+       python preprocess.py $CODE_VOCAB_PATH/vocab $tgt_path/$split.$lg
+    done
+fi
+
