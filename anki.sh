@@ -13,6 +13,7 @@ if [ ! -d $output_path ]; then
     mkdir $output_path
 fi
 
+echo "==========================="
 wget -c http://www.manythings.org/anki/$opus_lgs.zip -P $output_path
 unzip -u $output_path/$opus_lgs -d $output_path
 
@@ -23,3 +24,6 @@ fi
 IFS='- ' read -r -a array <<< "$opus_lgs"
 
 python $py_anky_file_path --lgs $lgs --srcFilePath $output_path/${array[0]}.txt --targetFilesPath $output_path
+
+echo "download and extract $opus_lgs data in $output_path"
+echo "==========================="
