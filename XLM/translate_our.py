@@ -27,6 +27,7 @@ class Translate():
         # source language / target language
         parser.add_argument("--src_lang", type=str, default=src_lang, help="Source language")
         parser.add_argument("--tgt_lang", type=str, default=tgt_lang, help="Target language")
+        parser.add_argument('-d', "--text", type=str, default="", nargs='+', help="Text to be translated")
 
         params = parser.parse_args()
         assert params.src_lang != '' and params.tgt_lang != '' and params.src_lang != params.tgt_lang
@@ -43,8 +44,14 @@ class Translate():
 
         # update dictionary parameters
         for name in ['n_words', 'bos_index', 'eos_index', 'pad_index', 'unk_index', 'mask_index']:
-            setattr(params, name, getattr(model_params, name))
-
+            try :    
+                setattr(params, name, getattr(model_params, name))    
+            except AttributeError :
+                key = list(model_params.meta_params.keys())[0]
+                attr = getattr(model_params.meta_params[key], name)
+                setattr(params, name, attr)
+                setattr(model_params, name, attr)
+                 
         # build dictionary / build encoder / build decoder / reload weights
         self.dico = Dictionary(reloaded['dico_id2word'], reloaded['dico_word2id'], reloaded['dico_counts'])
         #self.encoder = TransformerModel(model_params, dico, is_encoder=True, with_output=True).cuda().eval()
@@ -133,29 +140,38 @@ def get_parser():
     parser.add_argument("--src_lang", type=str, default="", help="Source language")
     parser.add_argument("--tgt_lang", type=str, default="", help="Target language")
 
+    parser.add_argument('-d', "--text", type=str, default="", nargs='+', help="Text to be translated")
+    
     return parser
 
 def main(params):
-
     # initialize the experiment
     logger = initialize_exp(params)
 
     # generate parser / parse parameters
-    parser = get_parser()
-    params = parser.parse_args()
+    #parser = get_parser()
+    #params = parser.parse_args()
     trainer = Translate(model_path = params.model_path , tgt_lang = params.tgt_lang, src_lang = params.src_lang,
                     dump_path = params.dump_path, exp_name=params.exp_name, 
                     exp_id=params.exp_id, batch_size=params.batch_size)
-    print(trainer.translate(["I eat something", "Good morning my frend"]))
-    print(trainer.translate("Good morning my frend, I eat something"))
+    
+    print(trainer.translate(params.text.split('[SEP]')))
 
 if __name__ == '__main__':
 
     # generate parser / parse parameters
     parser = get_parser()
     params = parser.parse_args()
-
+    
+    if isinstance(params.text, list) :
+        params.text = ' '.join(params.text)
+    if params.text.startswith("\""):
+        params.text = params.text[1:] 
+    if params.text.endswith("\""):
+        params.text = params.text[:len(params.text)-1]
+    
     # translate
     with torch.no_grad():
         main(params)
+
 
