@@ -19,7 +19,7 @@ fi
 
 echo "==========================="
 if [ $N_SAMPLES = "False" ];then
-    ! mv $src_file $tgt_file
+    mv $src_file $tgt_file
     echo "move $src_file to $tgt_file "
 else
     # usage : get_n_samples input_file n_samples output_file
