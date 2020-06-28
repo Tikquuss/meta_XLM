@@ -12,6 +12,8 @@ import argparse
 # our
 import copy
 import gc
+import json
+import os
 
 from src.slurm import init_signal_handler, init_distributed_mode
 from src.data.loader import check_data_params, load_data
@@ -233,6 +235,9 @@ def get_parser():
     
     parser.add_argument("--same_data_path", type=bool_flag, default=True, 
                         help="In the case of metalearning, this parameter, when passed to False, the data are searched for each task in a folder with the name of the task and located in data_path, otherwise all the data are searched in data_path.")
+    
+    parser.add_argument("--config_file", type=str, default="", 
+                        help="")
 
     return parser
 
@@ -494,6 +499,24 @@ def main(params):
         logger.info("============ garbage collector collecting %d ..." % gc.collect())
         
 # our
+def three_point(objectif, lgs, name) :
+    if objectif == "..." :
+        result = ""
+        if name == "mlm":
+            langs = lgs.split(",")
+            result = langs[0]
+            for lg in langs[1:] :
+                result = result+","+lg
+            l = len(langs)
+            for i in range(l-1):
+                for j in range(i+1, l):
+                    li = langs[i]
+                    lj = langs[j]
+                    result = result+","+li+"-"+lj
+        return result
+    else :      
+        return objectif
+    
 def check_meta_learning_params(params) :
     """
     This method basically verifies if there is a meta-task that is not present in any objective (clm, mlm, pc, mt, ae, bt)
@@ -506,6 +529,12 @@ if __name__ == '__main__':
     # generate parser / parse parameters
     parser = get_parser()
     params = parser.parse_args()
+    
+    if os.path.isfile(params.config_file):
+        with open(params.config_file) as json_data:
+            data_dict = json.load(json_data)
+            for key, value in data_dict.items():
+                setattr(params, key, value)
     
     # debug mode
     if params.debug:
@@ -585,19 +614,21 @@ if __name__ == '__main__':
     for lgs, clm, mlm, pc, mt, ae, bt in zip(meta_lgs, meta_clm, meta_mlm, meta_pc, meta_mt, meta_ae, meta_bt) :
         
         params.lgs = lgs 
-        params.clm_steps = clm 
-        params.mlm_steps = mlm 
-        params.pc_steps = pc 
-        params.mt_steps = mt 
-        params.ae_steps = ae    
-        params.bt_steps = bt 
+        params.clm_steps = three_point(objectif = clm, lgs = lgs, name="clm")
+        params.mlm_steps = three_point(objectif = mlm, lgs = lgs, name="mlm")
+        params.pc_steps = three_point(objectif = pc, lgs = lgs, name="pc")
+        params.mt_steps = three_point(objectif = mt, lgs = lgs, name="mt")
+        params.ae_steps = three_point(objectif = ae, lgs = lgs, name="ae") 
+        params.bt_steps = three_point(objectif = bt, lgs = lgs, name="bt")
         
         if params.meta_learning and not params.same_data_path:
             params.data_path = data_path+"/"+lgs
     
+        print(params.eval_bleu)
+        print(params.mt_steps)
+        print(params.bt_steps)
         check_data_params(params)
-        check_model_params(params)
-        
+        check_model_params(params)    
         
         params.meta_params[lgs] = copy.deepcopy(params)
         

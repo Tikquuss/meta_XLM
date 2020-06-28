@@ -11,12 +11,33 @@ cell_error (optional, defautlt = "__Error__") : text to be used to mark erroneou
 import argparse
 import os
 import csv
-from XLM.src.utils import bool_flag
+
+def bool_flag(s):
+    """
+    Parse boolean arguments from the command line.
+    """
+    FALSY_STRINGS = {'off', 'false', '0'}
+    TRUTHY_STRINGS = {'on', 'true', '1'}
+    if s.lower() in FALSY_STRINGS:
+        return False
+    elif s.lower() in TRUTHY_STRINGS:
+        return True
+    else:
+        raise argparse.ArgumentTypeError("Invalid value for a boolean flag!")
+        
 
 abreviation = {
-    "Francais":"fr", "Anglais":"en"
+    "Francais":"fr", "Anglais":"en",
     #"ar", "bg", "de", "el", "en", "es", "fr", "hi", "ru", "sw", "th", "tr", "ur", "vi", "zh", "ab", "ay", "bug", "ha", "ko", 
     #"ln", "min", "nds", "pap", "pt", "tg", "to", "udm", "uk", "zh_classical"
+    "BIBALDA_TA_PELDETTA":"BIBA", "Bulu":"Bulu", "Guiziga":"Guiz", "Fulfulde_Adamaoua":"Fulf",  
+    "Fulfulde_DC":"Fulf", "KALATA_KO_SC_Gbaya":"KALA", "KALATA_KO_DC_Gbaya":"KALA", 
+    "Kapsiki_DC":"Kaps", "Tupurri":"Tupu",
+    ##############
+    "Bafia":"Bafi", "Dii":"Dii", "Ejagham":"Ejag", "Ghomala":"Ghom", "Vute":"Vute", "Limbum":"Limb", 
+    "MKPAMAN_AMVOE_Ewondo":"Ewon", "Mofa":"Mofa", "Mofu_Gudur":"Mofu", "Ngiemboon":"Ngie", 
+    "Doyayo":"Doya", "Guidar":"Guid", "Peere_Nt&Psalms":"Peer", "Samba_Leko":"Samb", 
+    "Du_na_sdik_na_wiini_Alaw":"Du_n"
 }
 
 livres_ot = [
@@ -79,6 +100,7 @@ def get_abreviation(lang_name):
     except KeyError :
         return lang_name
     
+process = []
 def get_data_from_bible(csv_path, output_dir, data_type = "para", langues=[], livres=[], cell_error = "__Error__"):
     """
     csv_path : folder containing the csvs folder
@@ -88,7 +110,8 @@ def get_data_from_bible(csv_path, output_dir, data_type = "para", langues=[], li
     livres (optional, defautlt = livres_all) : list of the books of the bibles to be considered (there must exist for each of these books a livre.csv file in ../csvs/)
     cell_error (optional, defautlt = "__Error__") : text to be used to mark erroneous text pairs during webscrapping (these pairs are excluded from the data)    
     """
-
+    global process 
+    
     # If no language is specified, all languages are selected.
     if langues == [] :
         langues = langues_nt
@@ -97,17 +120,12 @@ def get_data_from_bible(csv_path, output_dir, data_type = "para", langues=[], li
     # If no book is specified, all books are selected.
     if livres == [] :
         livres = livres_all
-
+        
     l = len(langues)
     for i in range(l-1):
         for j in range(i+1, l):
             li = langues[i]
             lj = langues[j]
-
-            if li != lj :
-                print(li,"-",lj)
-            else :
-                print(li)
 
             samples = 0
             errors = 0
@@ -170,9 +188,22 @@ def get_data_from_bible(csv_path, output_dir, data_type = "para", langues=[], li
                         except Exception as ex :
                             pass
             
-            print("======= Read "+str(samples+errors)+" totals samples")
-            print("======= Delete "+str(errors)+" samples") 
-            print("======= Save "+str(samples)+" samples")  
+            stat = False
+            if li != lj :
+                if not li+"-"+lj in process :
+                    stat = True
+                    print(li,"-",lj)
+                    process.append(li+"-"+lj)
+            else :
+                if not li in process :
+                    stat = True
+                    print(li)
+                    process.append(li)
+                 
+            if stat :    
+                print("======= Read "+str(samples+errors)+" totals samples")
+                print("======= Delete "+str(errors)+" samples") 
+                print("======= Save "+str(samples)+" samples")  
 
             # If one of the two languages is in the old testament for both languages and the other is not,
             # build the mono data for the one in the two separations
