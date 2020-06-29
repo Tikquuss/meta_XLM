@@ -37,6 +37,7 @@ TOOLS_PATH=tools
 TOKENIZE=$TOOLS_PATH/tokenizer_our.sh
 LOWER_REMOVE_ACCENT=$TOOLS_PATH/lowercase_and_remove_accent.py
 FASTBPE=$TOOLS_PATH/fastBPE/fast
+PROCESSED_FILE=../scripts/build_meta_data_multixlm.sh
 
 # path where processed files will be stored
 OUTPATH=/home/jupyter/models/africa/cluster4/data/XLM_all/processed
@@ -47,6 +48,9 @@ n_samples=-1
 #sub_tasks=en-fr:10,de-en:-1,de-fr:-1
 #If you want the subtasks to be constructed from the pair combinations of your languages, put the three dots
 sub_tasks=...
+
+
+##############################################
 
 function abrev() {
     if [[ $1 = "Francais" ]]; then
@@ -91,13 +95,26 @@ mkdir -p $OUTPATH
 chmod +x $FASTBPE
 chmod +x $TOOLS_PATH/mosesdecoder/scripts/tokenizer/*.perl
 
+echo "======================="
+echo "Extract texts files"
+echo "======================="
+
 data_type=para
 python ../scripts/bible.py --csv_path $csv_path --output_dir $output_dir --data_type $data_type --languages $lgs
 
 data_type=mono
 python ../scripts/bible.py --csv_path $csv_path --output_dir $output_dir --data_type $data_type --languages $lgs
 
+echo "======================="
+echo "Processed"
+echo "======================="
 
 add_para_data_to_mono_data=False 
-chmod +x ../scripts/build_meta_data_multixlm.sh
-../scripts/build_meta_data_multixlm.sh $sub_tasks $n_samples $add_para_data_to_mono_data
+#chmod +x ../scripts/build_meta_data_multixlm.sh
+#../scripts/build_meta_data_multixlm.sh $sub_tasks $n_samples $add_para_data_to_mono_data
+chmod +x $PROCESSED_FILE
+$PROCESSED_FILE
+
+echo "======================="
+echo "End"
+echo "======================="

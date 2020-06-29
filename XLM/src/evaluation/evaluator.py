@@ -379,9 +379,8 @@ class Evaluator(object):
                             scores[data_key]['%s_mlm_acc' % data_set] = np.mean([scores[data_key]['%s_%s_mlm_acc' % (data_set, lang)] for lang in _mlm_mono])
                         """
         
-        # our
-        
-        # if params.meta_learning : report average metrics per task
+        # our : report average metrics per task
+        # if params.meta_learning 
         ## clm and mlm
         for objectif in ((['clm'] if evaluate_clm else []) + (['mlm'] if evaluate_mlm else [])) :
             values = ['ppl', 'acc']

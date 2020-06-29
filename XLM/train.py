@@ -22,7 +22,7 @@ from src.model import check_model_params, build_model
 from src.model.memory import HashingMemory
 from src.trainer import SingleTrainer, EncDecTrainer
 from src.evaluation.evaluator import SingleEvaluator, EncDecEvaluator
-
+import configs.types as types
 
 def get_parser():
     """
@@ -502,8 +502,9 @@ def main(params):
 def three_point(objectif, lgs, name) :
     if objectif == "..." :
         result = ""
-        if name == "mlm":
-            langs = lgs.split(",")
+        #if name in ["mlm", "clm"] :
+        if name == "mlm" :
+            langs = lgs.split("-")
             result = langs[0]
             for lg in langs[1:] :
                 result = result+","+lg
@@ -513,6 +514,8 @@ def three_point(objectif, lgs, name) :
                     li = langs[i]
                     lj = langs[j]
                     result = result+","+li+"-"+lj
+        #elif name in ["pc", "mt", "ae", "bt"] :
+        #    pass
         return result
     else :      
         return objectif
@@ -534,7 +537,15 @@ if __name__ == '__main__':
         with open(params.config_file) as json_data:
             data_dict = json.load(json_data)
             for key, value in data_dict.items():
-                setattr(params, key, value)
+                conf = types.config_dic[key]   
+                if value == "False":
+                    value = False
+                elif value == "True" :
+                    value = True
+                try :
+                    setattr(params, key, conf[0](value))
+                except :
+                    setattr(params, key, value)
     
     # debug mode
     if params.debug:

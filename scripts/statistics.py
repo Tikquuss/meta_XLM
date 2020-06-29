@@ -38,29 +38,29 @@ def get_parser():
 
 
 def get_error_value(stat, line, objectif, step_value):
-  if objectif in line :
-      a = objectif+"-"+step_value+":"
-      try :
-          a = line.split(a)[1].strip()
-      except IndexError as ie:
-        return
+    if objectif in line :
+        a = objectif+"-"+step_value+":"
+        try :
+            a = line.split(a)[1].strip()
+        except IndexError as ie:
+            return
     
-      if "||" in a :
-        a = a.split("||")[0].strip()
-      else :
-        a = a.split(" ")[0].strip()
+        if "||" in a :
+            a = a.split("||")[0].strip()
+        else :
+            a = a.split(" ")[0].strip()
       
-      try :
-         stat[objectif]
-         try :
-             stat[objectif][step_value]
-         except :
-             stat[objectif][step_value] = []
-      except :
-          stat[objectif] = {}
-          stat[objectif][step_value] = []
+        try :
+            stat[objectif]
+            try :
+                stat[objectif][step_value]
+            except :
+                 stat[objectif][step_value] = []
+        except :
+            stat[objectif] = {}
+            stat[objectif][step_value] = []
         
-      stat[objectif][step_value].append(a) 
+        stat[objectif][step_value].append(a) 
 
 def get_steps_value(objectif, params)  :
   # faire ca avec un switch case
@@ -68,12 +68,12 @@ def get_steps_value(objectif, params)  :
     langs = []
     steps = params.mlm_steps if objectif=='MLM' else params.clm_steps
     for (l1, l2) in steps :
-      if (l1 is None) and (not (l2 is None)) :
-        langs.append(l2)
-      elif (not (l1 is None)) and (l2 is None) :
-        langs.append(l1)
-      elif (not (l1 is None)) and (not (l2 is None)) :
-        langs.append(l1+"-"+l2)
+        if (l1 is None) and (not (l2 is None)) :
+            langs.append(l2)
+        elif (not (l1 is None)) and (l2 is None) :
+            langs.append(l1)
+        elif (not (l1 is None)) and (not (l2 is None)) :
+            langs.append(l1+"-"+l2)
     # removes duplicates
     langs = list(set(langs))
     return langs
