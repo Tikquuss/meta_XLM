@@ -29,7 +29,29 @@ See [HowToTrainYourMAMLPytorch](https://github.com/AntreasAntoniou/HowToTrainYou
 
 ## III. XLM + MAML  
 
-### Pretrained models
+### Pretrained models  
+
+Todo : fix the preview problem (work well on vscode)
+
+Translation_task | Bafi-Bulu | Bulu-Bafi | Ghom-Limb | Limb-Ghom | Bafi-Ewon | Ewon-Bafi | Bulu-Ewon | Ewon-Bulu | Ghom-Ngie | Ngie-Ghom | Limb-Ngiem | Ngiem-Limb 
+| :---: |:---: |:---: | :---: |:---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+`single transformer` | 08.64 | 11.85 | <span style="color:blue">*18.31*</span> | <span style="color:blue">*12.9*</span> | 08.38 | 13.68 | 09.51 | 11.24 | 06.36 | 07.56 | 06.76 | 11.29 
+`XLMT_1` | 14.91 | 13.32 | 15.40 | 11.28 
+`XLMT_23` | **17.80** | **28.42** | **27.26** | **24.82** | **36.30** | **13.71** | **11.98** | **18.43** | **16.62** | **08.55** | **07.39** | **13.48**
+
+
+cluster1 = (Bafia, Bulu, Ghom, Limb)  
+cluster2 = (Ghom, Limb, Ngiem)  
+cluster3 = (Bafia, Bulu, Ewondo)  
+  
+XLMT_1 = cross-lingual machine translation on cluster1 for translation tasks Bafia-Bulu, Bulu-Bafia, Ghom-Limb, Limb-Ghom  
+XLMT_23 :  
+    - cross-lingual machine translation on cluster2 for all translation tasks A-B with A, B ∈ cluster2  
+    - cross-lingual machine translation on cluster3 for all translation tasks A-B with A, B ∈ cluster3
+
+Translation_task  | en-Bafi | Bafi-en | en-Bulu | Bulu-en | en-Ewon | Ewon-en | fr-Bafi | Bafi-fr | fr-Bulu | Bulu-fr | fr-Ewon | Ewon-fr 
+| :---: |:---: |:---: | :---: |:---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+`XLMT` | **34.10** | **30.03** | **25.46** | **31.82** | **49.69** | **43.85** | **16.28** | **23.84** | **21.80** | **30.02** | **11.95** | **27.84**
 
 ##### doto : move pre-trained from gcloud to gdrive
 
@@ -401,3 +423,8 @@ Please cite [[1]](https://arxiv.org/abs/1901.07291) and [[2]](https://arxiv.org/
 ## License
 
 See the [LICENSE](LICENSE) file for more details.
+
+
+
+
+
