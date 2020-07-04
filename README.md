@@ -33,6 +33,8 @@ See [HowToTrainYourMAMLPytorch](https://github.com/AntreasAntoniou/HowToTrainYou
 
 Todo : fix the preview problem (work well on vscode)
 
+<img src="./benchmark.png"/>  
+
 Translation_task | Bafi-Bulu | Bulu-Bafi | Ghom-Limb | Limb-Ghom | Bafi-Ewon | Ewon-Bafi | Bulu-Ewon | Ewon-Bulu | Ghom-Ngie | Ngie-Ghom | Limb-Ngiem | Ngiem-Limb 
 | :---: |:---: |:---: | :---: |:---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |  
 `single transformer` | 08.64 | 11.85 | <span style="color:blue">*18.31*</span> | <span style="color:blue">*12.9*</span> | 08.38 | 13.68 | 09.51 | 11.24 | 06.36 | 07.56 | 06.76 | 11.29   
