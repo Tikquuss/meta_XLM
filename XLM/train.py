@@ -502,7 +502,7 @@ def main(params):
 def three_point(objectif, lgs, name) :
     if objectif == "..." :
         result = ""
-        #if name in ["mlm", "clm"] :
+        #if name = "clm" : todo
         if name == "mlm" :
             langs = lgs.split("-")
             result = langs[0]
@@ -514,8 +514,34 @@ def three_point(objectif, lgs, name) :
                     li = langs[i]
                     lj = langs[j]
                     result = result+","+li+"-"+lj
-        #elif name in ["pc", "mt", "ae", "bt"] :
-        #    pass
+        elif name == "mt" :
+          langs = lgs.split("-")
+          l = len(langs)
+          for i in range(l-1):
+            for j in range(i+1, l):
+              li = langs[i]
+              lj = langs[j]
+              result = result+","+li+"-"+lj
+              result = result+","+lj+"-"+li
+          if result.startswith(","):
+            result = result[1:]
+        elif name == "ae" :
+          langs = lgs.split("-")
+          result = langs[0]
+          for lg in langs[1:] :
+            result = result+","+lg
+        elif name == "bt" :
+          langs = lgs.split("-")
+          l = len(langs)
+          for i in range(l-1):
+            for j in range(i+1, l):
+              li = langs[i]
+              lj = langs[j]
+              result = result+","+li+"-"+lj+"-"+li
+              result = result+","+lj+"-"+li+"-"+lj
+          if result.startswith(","):
+            result = result[1:]
+        #elif name == "pc" : todo
         return result
     else :      
         return objectif
@@ -554,6 +580,7 @@ if __name__ == '__main__':
         params.debug_slurm = True
         params.debug_train = True
     
+
     # our
     params.n_samples={}
     params.n_samples['train'] = params.train_n_samples
@@ -634,10 +661,7 @@ if __name__ == '__main__':
         
         if params.meta_learning and not params.same_data_path:
             params.data_path = data_path+"/"+lgs
-    
-        print(params.eval_bleu)
-        print(params.mt_steps)
-        print(params.bt_steps)
+
         check_data_params(params)
         check_model_params(params)    
         
