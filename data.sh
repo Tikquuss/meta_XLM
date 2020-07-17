@@ -110,10 +110,11 @@ echo "Processed"
 echo "======================="
 
 add_para_data_to_mono_data=False 
-#chmod +x ../scripts/build_meta_data_multixlm.sh
-#../scripts/build_meta_data_multixlm.sh $sub_tasks $n_samples $add_para_data_to_mono_data
-chmod +x $PROCESSED_FILE
-$PROCESSED_FILE
+chmod +x ../scripts/build_meta_data_multixlm.sh
+../scripts/build_meta_data_multixlm.sh $sub_tasks $n_samples $add_para_data_to_mono_data
+# todo : rendre les choses dynamiques comme ceci
+#chmod +x $PROCESSED_FILE
+#$PROCESSED_FILE
 
 echo "======================="
 echo "End"
