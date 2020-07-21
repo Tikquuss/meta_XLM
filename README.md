@@ -21,43 +21,122 @@ XLM supports multi-GPU and multi-node training, and contains code for:
 - [Moses](https://github.com/facebookresearch/XLM/tree/master/tools#tokenizers) (scripts to clean and tokenize text only - no installation required)
 - [Apex](https://github.com/nvidia/apex#quick-start) (for fp16 training)
 
+### Pretrained models  
+
+<table class="table table-striped">
+    <caption><b>cross-lingual machine translation BLEU score</b></caption>
+    <thead>
+        <tr>
+            <th scope="col">Translation_task</th>
+            <th scope="col">Bafi-Bulu</th>
+            <th scope="col">Bulu-Bafi</th>
+            <th scope="col">Ghom-Limb</th>
+            <th scope="col">Limb-Ghom</th>
+            <th scope="col">Bafi-Ewon</th>
+            <th scope="col">Ewon-Bafi</th>
+            <th scope="col">Bulu-Ewon</th>
+            <th scope="col">Ewon-Bulu</th>
+            <th scope="col">Ghom-Ngie</th>
+            <th scope="col">Ngie-Ghom</th>
+            <th scope="col">Limb-Ngie</th>
+            <th scope="col">Ngie-Limb</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <th scope="row">single transformer</th>
+            <td>08.64</td>
+            <td>11.85</td>
+            <td style="color:blue">18.31</td>
+            <td style="color:blue">12.90</td> 
+            <td>08.38</td>
+            <td>13.68</td>
+            <td>09.51</td>
+            <td>11.24</td>
+            <td>06.36</td>
+            <td>07.56</td>
+            <td>06.76</td>
+            <td>11.29</td>   
+        </tr>
+        <tr>
+            <th scope="row">XLMT_1</th>
+            <td>14.91</td>
+            <td>13.32</td>
+            <td>15.40</td>
+            <td>11.28 </td>
+        </tr>
+        <tr>
+            <th scope="row">XLMT_23</th>
+            <td><b>17.80</b></td>
+            <td><b>28.42</b></td>
+            <td><b>27.26</b></td>
+            <td><b>24.82</b></td>
+            <td><b>36.30</b></td>
+            <td><b>13.71</b></td>
+            <td><b>11.98</b></td>
+            <td><b>18.43</b></td>
+            <td><b>16.62</b></td>
+            <td><b>08.55</b></td>
+            <td><b>07.39</b></td>
+            <td><b>13.48</b></td>
+        </tr>
+    </tbody>
+  </table> 
+
+  <table class="table table-striped">
+    <thead>
+        <tr>
+            <th scope="col">Translation_task</th>
+            <th scope="col">en-Bafi</th>
+            <th scope="col">Bafi-en</th>
+            <th scope="col">en-Bulu</th>
+            <th scope="col">Bulu-en</th>
+            <th scope="col">en-Ewon</th>
+            <th scope="col">Ewon-en</th>
+            <th scope="col">fr-Bafi</th>
+            <th scope="col">Bafi-fr</th>
+            <th scope="col">fr-Bulu</th>
+            <th scope="col">Bulu-fr</th>
+            <th scope="col">fr-Ewon</th>
+            <th scope="col">Ewon-fr</th>
+        </tr>  
+    </thead>
+    <tbody>
+        <tr>
+            <th scope="row">XLMT</th>
+            <td><b>34.10</b></td>
+            <td><b>30.03</b></td>
+            <td><b>25.46</b></td>
+            <td><b>31.82</b></td>
+            <td><b>49.69</b></td>
+            <td><b>43.85</b></td>
+            <td><b>16.28</b></td>
+            <td><b>23.84</b></td>
+            <td><b>21.80</b></td>
+            <td><b>30.02</b></td>
+            <td><b>11.95</b></td>
+            <td><b>27.84</b></td>  
+        </tr>
+    </tbody>
+  </table> 
+  
+
+cluster1 = (<b>Bafi</b>a, <b>Bulu</b>, <b>Ghom</b>ala, <b>Limb</b>ium)  
+cluster2 = (<b>Ghom</b>ala, <b>Limb</b>um, <b>Ngie</b>mboon)  
+cluster3 = (<b>Bafi</b>a, <b>Bulu</b>, <b>Ewon</b>do)  
+  
+XLMT_1 = cross-lingual machine translation on cluster1 for translation tasks Bafi-Bulu, Bulu-Bafi, Ghom-Limb and Limb-Ghom  
+XLMT_23 :  
+    - cross-lingual machine translation on cluster2 for all translation tasks A-B with A, B ∈ cluster2  
+    - cross-lingual machine translation on cluster3 for all translation tasks A-B with A, B ∈ cluster3
+
 ## II. Model-Agnostic Meta-Learning ([MAML](https://arxiv.org/abs/1911.02116))  
 
 See [maml](https://github.com/cbfinn/maml), [learn2learn](https://github.com/learnables/learn2learn)...  
 
 See [HowToTrainYourMAMLPytorch](https://github.com/AntreasAntoniou/HowToTrainYourMAMLPytorch) for a replication of the paper ["How to train your MAML"](https://arxiv.org/abs/1810.09502), along with a replication of the original ["Model Agnostic Meta Learning"](https://arxiv.org/abs/1703.03400) (MAML) paper.
 
-## III. XLM + MAML  
-
-### Pretrained models  
-
-Todo : fix the preview problem (work well on vscode)
-
-<img src="./benchmark.png"/>  
-
-Translation_task | Bafi-Bulu | Bulu-Bafi | Ghom-Limb | Limb-Ghom | Bafi-Ewon | Ewon-Bafi | Bulu-Ewon | Ewon-Bulu | Ghom-Ngie | Ngie-Ghom | Limb-Ngiem | Ngiem-Limb 
-| :---: |:---: |:---: | :---: |:---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |  
-`single transformer` | 08.64 | 11.85 | <span style="color:blue">*18.31*</span> | <span style="color:blue">*12.9*</span> | 08.38 | 13.68 | 09.51 | 11.24 | 06.36 | 07.56 | 06.76 | 11.29   
-`XLMT_1` | 14.91 | 13.32 | 15.40 | 11.28   
-`XLMT_23` | **17.80** | **28.42** | **27.26** | **24.82** | **36.30** | **13.71** | **11.98** | **18.43** | **16.62** | **08.55** | **07.39** | **13.48**
-
-
-cluster1 = (Bafia, Bulu, Ghom, Limb)  
-cluster2 = (Ghom, Limb, Ngiem)  
-cluster3 = (Bafia, Bulu, Ewondo)  
-  
-XLMT_1 = cross-lingual machine translation on cluster1 for translation tasks Bafia-Bulu, Bulu-Bafia, Ghom-Limb, Limb-Ghom  
-XLMT_23 :  
-    - cross-lingual machine translation on cluster2 for all translation tasks A-B with A, B ∈ cluster2  
-    - cross-lingual machine translation on cluster3 for all translation tasks A-B with A, B ∈ cluster3
-
-Translation_task  | en-Bafi | Bafi-en | en-Bulu | Bulu-en | en-Ewon | Ewon-en | fr-Bafi | Bafi-fr | fr-Bulu | Bulu-fr | fr-Ewon | Ewon-fr 
-| :---: |:---: |:---: | :---: |:---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |  
-`XLMT` | **34.10** | **30.03** | **25.46** | **31.82** | **49.69** | **43.85** | **16.28** | **23.84** | **21.80** | **30.02** | **11.95** | **27.84**
-
-##### doto : move pre-trained from gcloud to gdrive
-
-### Train your own meta-model
+## III. Train your own (meta-)model
 
 #### 1. Preparing the data 
 
@@ -73,17 +152,18 @@ All these files must be in the same folder (`PARA_PATH`).
 You can also (and optionally) have monolingual data available (en.txt, de.txt and fr.txt; in `MONO_PATH` folder).  
 Parallel and monolingual data can all be in the same folder.
 
-Note : Languages must be submitted in alphabetical order (de-en and not en-de, fr-ru and not ru-fr ...). If you submit them in any order you will have problems loading data during training, because when you run the [train.py](XLM/train.py) script the parameters like the language pair are put back in alphabetical order before being processed. Don't worry about this alphabetical order restriction, XLM for MT is naturally trained to translate sentences in both directions. See [translate.py](translate.py).
+Note : Languages must be submitted in alphabetical order (de-en and not en-de, fr-ru and not ru-fr ...). If you submit them in any order you will have problems loading data during training, because when you run the [train.py](XLM/train.py) script the parameters like the language pair are put back in alphabetical order before being processed. Don't worry about this alphabetical order restriction, XLM for MT is naturally trained to translate sentences in both directions. See [translate.py](scripts/translate.py).
 
-[OPUS collections](http://opus.nlpl.eu/) is a good source of dataset. We illustrate in the [opus.sh](opus.sh) script how to download the data from opus and convert it to a text file. 
+[OPUS collections](http://opus.nlpl.eu/) is a good source of dataset. We illustrate in the [opus.sh](scripts/opus.sh) script how to download the data from opus and convert it to a text file. 
 
-Another source for other_languages-english data is [anki Tab-delimited Bilingual Sentence Pairs](http://www.manythings.org/anki/). Simply download the .zip file, unzip to extract the other_language.txt file. This file usually contains data in the form of `sentence_en sentence_other_language other_information` on each line. See [anki.py](anki.py) and [anky.sh](anki.sh) in relation to a how to extract data from [anki](http://www.manythings.org/anki/). Example of how to download and extract de-en pair data.
+Another source for other_languages-english data is [anki Tab-delimited Bilingual Sentence Pairs](http://www.manythings.org/anki/). Simply download the .zip file, unzip to extract the other_language.txt file. This file usually contains data in the form of `sentence_en sentence_other_language other_information` on each line. See [anki.py](scripts/anki.py) and [anky.sh](scripts/anki.sh) in relation to a how to extract data from [anki](http://www.manythings.org/anki/). Example of how to download and extract de-en pair data.
 ```
 cd meta_XLM
-mkdir XLM/data/para
-chmod +x anki.sh
-./anki.sh de,en deu-eng meta_XLM/XLM/data/para anki.py
-#./anki.sh en,fr fra-eng meta_XLM/XLM/data/para anki.py
+output_path=XLM/data/para
+mkdir $output_path
+chmod +x scripts/anki.sh
+./anki.sh de,en deu-eng $output_path scripts/anki.py
+#./anki.sh en,fr fra-eng $output_path scripts/anki.py
 ```
 After that you will have in `data/para` following files : de-en.de.txt, de-en.en.txt, deu.txt, deu-eng.zip and _about.txt  
 
@@ -99,48 +179,9 @@ git clone https://github.com/glample/fastBPE && cd fastBPE && g++ -std=c++11 -pt
 Return to the `XLM` folder
 
 ```
-PARA=True          # If parallel data is available and you need to preprocess it
-MONO=True          # if you want to process monolingual data (if the monolingual data is unavailable and you 
-                   # leave this parameter set to True, the parallel data will be used to build the monolingual data)
-PARA_PATH=...      # folder containing the parallel data
-MONO_PATH=...      # folder containing the monolingual data
-SAME_VOCAB=True    # whether all languages should share the same vocabulary (leave to True)
-nCodes=10000             # Learn nCodes BPE code on the training data
-shuf_n_samples=1000000   # Generating shuf_n_samples random permutations of training data to learn bpe
-threads_for_tokenizer=16 # It is preferable and advisable that it be the powers of two...
-test_size=10             # Percentage of test data (%)
-val_size=10              # Percentage of valid data (%)
-
-# tools paths
-TOKENIZE=tools/tokenizer_our.sh
-LOWER_REMOVE_ACCENT=tools/lowercase_and_remove_accent.py
-FASTBPE=tools/fastBPE/fast
-
-
-OUTPATH=... # path where processed files will be stored
-# create output path
-mkdir -p $OUTPATH
-
-chmod +x $FASTBPE
-chmod +x ../build_meta_data.sh
-chmod +x tools/mosesdecoder/scripts/tokenizer/*.perl
-
-# The n_sample parameter is optional, and when it is not passed or when it exceeds the dataset size, the whole dataset is considered
-
-n_samples=-1
-
-# If you don't have any other data to fine-tune your model on a specific sub-task, specify the percentage of the sub-task metadata to consider or -1 to ignore it.
-
-sub_tasks=en-fr:10,de-en:-1,de-fr:-1
-
-# The following parameter allows, when having independent monolingual and parallel data, to add the parallel data to the monolingual data. It is left by default to True. 
-# To pass this parameter you have to specify the number of examples as indicated above, because these parameters are received in the script in the order mentioned here.
-add_para_data_to_mono_data=True
-
-# Transform (tokenize, lower and remove accent, loard code and vocab, learn and apply BPE tokenization, binarize...) our data contained 
-# in the text files into a pth file understandable by the framework : takes a lot of time with dataset size, nCodes and shuf_n_samples
-
-../build_meta_data.sh $sub_tasks $n_samples $add_para_data_to_mono_data
+languages=de,en,fr
+chmod +x ../data.sh 
+../data.sh $languages
 ```
 
 If you stop the execution when processing is being done on a file please delete this erroneous file before continuing or restarting the processing, otherwise the processing will continue with this erroneous file and potential errors will certainly occur.  
@@ -167,62 +208,67 @@ After this you will have the following (necessary) files in `$OUTPATH` (and `$OU
         - valid.de-fr.de.pth and valid.de-fr.fr.pth 
  - code and vocab
 ```
+To use the biblical corpus, run [bible.sh](bible.sh) instead of [data.sh](data.sh)
 
 #### 2. Pretrain a language meta-model 
 
 Install the following dependencie ([Apex](https://github.com/nvidia/apex#quick-start)) if you have not already done so.
 ```
 git clone https://github.com/NVIDIA/apex
-cd apex
-pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
+pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./apex
 ```
 
-Go back to the `XLM` folder and start training
+Instead of passing all the parameters of train.py, put them in a json file and specify the path to this file in parameter (See [lm_template.json](configs/lm_template.json) file for more details).
+```
+config_file=/configs/lm_template.json
+python train.py --config_file $config_file
+```
+When "mlm_steps":"...", train.py automatically uses the languages to have `"mlm_steps":"de,en,fr,de-en,de-fe,en-fr"` (Give a precise value to x if you don't want to do all MLM and TLM, example : `"mlm_steps":"en,fr,en-fr"`)
+
+###### Description of some essential parameters
 
 ```
-python train.py
-
 ## main parameters
---exp_name mlm_enfrde                  # experiment name
---exp_id maml                          # Experiment ID
---dump_path ./dumped                   # where to store the experiment (the model will be stored in $dump_path/$exp_name/$exp_id)
+exp_name                     # experiment name
+exp_id                       # Experiment ID
+dump_path                    # where to store the experiment (the model will be stored in $dump_path/$exp_name/$exp_id)
 
 ## data location / training objective
---data_path  $OUTPATH                   # data location 
---lgs 'en-fr|de-en|de-fr'               # considered languages/meta-tasks
---clm_steps ''                          # CLM objective
---mlm_steps 'en,fr|de,en|de,fr'         # MLM objective
+data_path                    # data location 
+lgs                          # considered languages/meta-tasks
+clm_steps                    # CLM objective
+mlm_steps                    # MLM objective
 
 ## transformer parameters
---emb_dim 1024                          # embeddings / model dimension
---n_layers 6                            # number of layers
---n_heads 8                             # number of heads
---dropout 0.1                           # dropout
---attention_dropout 0.1                 # attention dropout
---gelu_activation true                  # GELU instead of ReLU
+emb_dim                      # embeddings / model dimension
+n_layers                     # number of layers
+n_heads                      # number of heads
+dropout                      # dropout
+attention_dropout            # attention dropout
+gelu_activation              # GELU instead of ReLU
 
 ## optimization
---batch_size 32                         # sequences per batch
---bptt 256                              # sequences length
---optimizer adam,lr=0.0001              # optimizer
---epoch_size 200000                     # number of sentences per epoch
---max_epoch 100                         # Maximum epoch size
---validation_metrics _valid_mlm_ppl     # validation metric (when to save the best model)
---stopping_criterion _valid_mlm_ppl,10  # end experiment if stopping criterion does not improve
+batch_size                   # sequences per batch
+bptt                         # sequences length
+optimizer                    # optimizer
+epoch_size                   # number of sentences per epoch
+max_epoch                    # Maximum epoch size
+validation_metrics           # validation metric (when to save the best model)
+stopping_criterion           # end experiment if stopping criterion does not improve
 
 ## dataset
 #### These three parameters will always be rounded to an integer number of batches, so don't be surprised if you see different values than the ones provided.
---train_n_samples -1                    # Just consider train_n_sample train data
---valid_n_samples -1                    # Just consider valid_n_sample validation data 
---test_n_samples -1                     # Just consider test_n_sample test data for
-#### If you don't have enough RAM or swap memory, leave these three parameters to True, otherwise you may get an error like this when evaluating :
-#### RuntimeError: copy_if failed to synchronize: cudaErrorAssert: device-side assert triggered
---remove_long_sentences_train True      # remove long sentences in train dataset
---remove_long_sentences_valid False     # remove long sentences in valid dataset
---remove_long_sentences_test False      # remove long sentences in test dataset
-
-## There are other parameters that are not specified here (see train.py).
+train_n_samples              # Just consider train_n_sample train data
+valid_n_samples              # Just consider valid_n_sample validation data 
+test_n_samples               # Just consider test_n_sample test data for
+#### If you don't have enough RAM/GPU or swap memory, leave these three parameters to True, otherwise you may get an error like this when evaluating :
+###### RuntimeError: copy_if failed to synchronize: cudaErrorAssert: device-side assert triggered
+remove_long_sentences_train True      
+remove_long_sentences_valid False     
+remove_long_sentences_test False      
 ```
+
+###### There are other parameters that are not specified here (see [train.py](XLM/train.py))
 
 If parallel data is available for each meta-task, the TLM objective can be used with `--mlm_steps 'en-fr|en-de|de-fr'`. To train with both the MLM and TLM objective for each meta-task, you can use `--mlm_steps 'en,fr,en-fr|en,de,en-de|de,fr,de-fr'`. 
 
@@ -235,102 +281,45 @@ export NGPU=8; python -m torch.distributed.launch --nproc_per_node=$NGPU train.p
 
 #### 3. Train a (unsupervised/supervised) MT from a pretrained meta-model 
 
+See [mt_template.json](configs/mt_template.json) file for more details).
 ```
-python train.py
-
-## main parameters
---exp_name meta_MT_enfrde                                     # experiment name
---exp_id maml                                                 # Experiment ID
---dump_path ./dumped/                                         # where to store the experiment (the model will be stored in $dump_path/$exp_name/$exp_id)
---reload_model 'dumped/mlm_enfrde/maml/best-valid_mlm_ppl.pth,dumped/mlm_enfrde/maml/best-valid_mlm_ppl.pth'          
-                                                              # model to reload for encoder,decoder
-## data location / training objective
---data_path $OUTPATH                                          # data location
---lgs 'en-fr|de-en|de-fr'                                     # considered languages/meta-tasks
---ae_steps 'en,fr|de,en|de,fr'                                # denoising auto-encoder training steps
---bt_steps 'en-fr-en,fr-en-fr|de-en-de,en-de-en|de-fr-de,fr-de-fr'    # back-translation steps
---word_shuffle 3                                              # noise for auto-encoding loss
---word_dropout 0.1                                            # noise for auto-encoding loss
---word_blank 0.1                                              # noise for auto-encoding loss
---lambda_ae '0:1,100000:0.1,300000:0'                         # scheduling on the auto-encoding coefficient
+config_file=/configs/mt_template.json
+python train.py --config_file $config_file
+```
+###### Description of some essential parameters  
+The description made above remains valid here
+```
+ae_steps          # denoising auto-encoder training steps
+bt_steps          # back-translation steps
+word_shuffle      # noise for auto-encoding loss
+word_dropout      # noise for auto-encoding loss
+word_blank        # noise for auto-encoding loss
+lambda_ae         # scheduling on the auto-encoding coefficient
 
 ## transformer parameters
---encoder_only false                                          # use a decoder for MT
---emb_dim 1024                                                # embeddings / model dimension
---n_layers 6                                                  # number of layers
---n_heads 8                                                   # number of heads
---dropout 0.1                                                 # dropout
---attention_dropout 0.1                                       # attention dropout
---gelu_activation true                                        # GELU instead of ReLU
+encoder_only      # use a decoder for MT
 
 ## optimization
---tokens_per_batch 2000                                       # use batches with a fixed number of words
---batch_size 32                                               # batch size (for back-translation)
---bptt 256                                                    # sequence length
---optimizer adam_inverse_sqrt,beta1=0.9,beta2=0.98,lr=0.0001  # optimizer
---epoch_size 200000                                           # number of sentences per epoch
---eval_bleu true                                              # also evaluate the BLEU score
---stopping_criterion 'valid_mt_bleu,10'                       # validation metric (when to save the best model)
---validation_metrics 'valid_mt_bleu'                          # end experiment if stopping criterion does not improve
-
-## dataset
-#### These three parameters will always be rounded to an integer number of batches, so don't be surprised if you see different values than the ones provided.
---train_n_samples -1                    # Just consider train_n_sample train data
---valid_n_samples -1                    # Just consider valid_n_sample validation data 
---test_n_samples -1                     # Just consider test_n_sample test data for
-#### If you don't have enough RAM or swap memory, leave these three parameters to True, otherwise you may get an error like this when evaluating :
-#### RuntimeError: copy_if failed to synchronize: cudaErrorAssert: device-side assert triggered
---remove_long_sentences_train True      # remove long sentences in train dataset
---remove_long_sentences_valid False     # remove long sentences in valid dataset
---remove_long_sentences_test False      # remove long sentences in test dataset
-
-## There are other parameters that are not specified here (see train.py).
+tokens_per_batch  # use batches with a fixed number of words
+eval_bleu         # also evaluate the BLEU score
 ```
-    
+###### There are other parameters that are not specified here (see [train.py](XLM/train.py))
+
 Above training is unsupervised. For a supervised nmt, add `--mt_steps 'en-fr,fr-en|en-de,de-en|de-fr,fr-de'` if parallel data is available.  
 
 Here we have mentioned the objectives for each meta-task. If you want to exclude a meta-task in an objective, put a blank in its place. Suppose we want to exclude from `ae_steps 'en,fr|en,de|de-fr` the meta-task:
 - de-en : `ae_steps 'en,fr||de-fr'` 
 - de-fr : `ae_steps 'en,fr|de,en|'`
 
-### Fine-tune the meta-model on a specific (sub) nmt (meta) task
+### 4. Fine-tune the meta-model on a specific (sub) nmt (meta) task (case of metalearning)
 
-At this point, if your fine-tuning data did not come from the previous pre-processing, you can just prepare your txt data and call the script build_meta_data.sh with the (sub) task in question. Since the codes and vocabulary must be preserved, we have prepared another script ([build_fine_tune_data.sh](build_fine_tune_data.sh)) in which we directly apply BPE tokenization on dataset and binarize everything using preprocess.py based on the codes and vocabulary of the meta-model. So we have to call this script for each subtask like this :
+At this point, if your fine-tuning data did not come from the previous pre-processing, you can just prepare your txt data and call the script build_meta_data.sh with the (sub) task in question. Since the codes and vocabulary must be preserved, we have prepared another script ([build_fine_tune_data.sh](scripts/build_fine_tune_data.sh)) in which we directly apply BPE tokenization on dataset and binarize everything using preprocess.py based on the codes and vocabulary of the meta-model. So we have to call this script for each subtask like this :
 
 ```
-PARA=True          # If parallel data is available and you need to preprocess it
-MONO=True          # if you want to process monolingual data (if the monolingual data is unavailable and you 
-                   # leave this parameter set to True, the parallel data will be used to build the monolingual data)
-PARA_PATH=...      # folder containing the parallel data
-MONO_PATH=...      # folder containing the monolingual data
-CODE_VOCAB_PATH=...# File containing the codes and vocabularies from the previous meta-processing. 
-
-test_size=10       # Percentage of test data (%)
-val_size=10        # Percentage of valid data (%)
-
-# tools paths
-TOKENIZE=tools/tokenize.sh
-LOWER_REMOVE_ACCENT=tools/lowercase_and_remove_accent.py
-FASTBPE=tools/fastBPE/fast
-
-
-OUTPATH=... # path where processed files will be stored
-# create output path
-mkdir -p $OUTPATH
-
-chmod +x $FASTBPE
-chmod +x build_fine_tune_data.sh
-chmod +x tools/mosesdecoder/scripts/tokenizer/*.perl
-
-# The n_sample parameter is optional, and when it is not passed or when it exceeds the dataset size, the whole dataset is considered
-n_samples=-1
-
-# transform (tokenize, lower and remove accent, loard code and vocab, apply BPE tokenization, binarize...) our data contained 
-# in the text files into a pth file understandable by the framework.
-
-# Let's consider the sub-task en-fr.
-
-../build_fine_tune_data.sh en-fr $n_samples
+goal=fine_tune 
+CODE_VOCAB_PATH=/content/Bafi
+chmod +x ../preprocess.sh 
+../preprocess.sh $languages
 ```
 
 Let's consider the sub-task en-fr.  
@@ -338,57 +327,23 @@ At this stage you can use one of the two previously trained meta-models: pre-for
 
 Move to the `XLM` folder in advance.
 
+See [mt_template.json](configs/mt_template.json) file for more details).
 ```
-python train.py
-
-## main parameters
---exp_name meta_MT_enfr                                       # experiment name
---exp_id maml                                                 # Experiment ID
---dump_path ./dumped/                                         # where to store the experiment (the model will be stored in $dump_path/$exp_name/$exp_id)
---reload_model 'dumped/meta_MT_enfrde/maml/best-valid_mt_bleu.pth,dumped/meta_MT_enfrde/maml/best-valid_mt_bleu.pth'   # model to reload for encoder,decoder
-
-## data location / training objective
---data_path $OUTPATH/fine_tune                                # data location
---lgs 'en-fr'                                                 # considered languages
---ae_steps 'en,fr'                                            # denoising auto-encoder training steps
---bt_steps 'en-fr-en,fr-en-fr'                                # back-translation steps
---word_shuffle 3                                              # noise for auto-encoding loss
---word_dropout 0.1                                            # noise for auto-encoding loss
---word_blank 0.1                                              # noise for auto-encoding loss
---lambda_ae '0:1,100000:0.1,300000:0'                         # scheduling on the auto-encoding coefficient
-
-## transformer parameters
---encoder_only false                                          # use a decoder for MT
---emb_dim 1024                                                # embeddings / model dimension
---n_layers 6                                                  # number of layers
---n_heads 8                                                   # number of heads
---dropout 0.1                                                 # dropout
---attention_dropout 0.1                                       # attention dropout
---gelu_activation true                                        # GELU instead of ReLU
-
-## optimization
---tokens_per_batch 2000                                       # use batches with a fixed number of words
---batch_size 32                                               # batch size (for back-translation)
---bptt 256                                                    # sequence length
---optimizer adam_inverse_sqrt,beta1=0.9,beta2=0.98,lr=0.0001  # optimizer
---epoch_size 200000                                           # number of sentences per epoch
---eval_bleu true                                              # also evaluate the BLEU score
---stopping_criterion 'valid_en-fr_mt_bleu,10'                 # validation metric (when to save the best model)
---validation_metrics 'valid_en-fr_mt_bleu'                    # end experiment if stopping criterion does not improve
-
-## dataset
-#### These three parameters will always be rounded to an integer number of batches, so don't be surprised if you see different values than the ones provided.
---train_n_samples -1                    # Just consider train_n_sample train data
---valid_n_samples -1                    # Just consider valid_n_sample validation data 
---test_n_samples -1                     # Just consider test_n_sample test data for
-#### If you don't have enough RAM or swap memory, leave these three parameters to True, otherwise you may get an error like this when evaluating :
-#### RuntimeError: copy_if failed to synchronize: cudaErrorAssert: device-side assert triggered
---remove_long_sentences_train True      # remove long sentences in train dataset
---remove_long_sentences_valid False     # remove long sentences in valid dataset
---remove_long_sentences_test False      # remove long sentences in test dataset
+config_file=/configs/mt_template.json
+python train.py --config_file $config_file
 ```
 
 Above training is unsupervised. For a supervised nmt, add `--mt_steps 'en-fr,fr-en'` if parallel data is available.
+
+### 5. How to evaluate a language model trained on a language L on another language L'.
+
+```
+goal=evaluation
+CODE_VOCAB_PATH=/content/Bafi
+chmod +x ../preprocess.sh 
+../preprocess.sh $languages
+```
+
 
 ## References
 

@@ -1,15 +1,24 @@
 #!/bin/bash
 
-# usage : data.sh $languages
+# usage : bible.sh $languages
+# download and processed bible data
 # Transform (tokenize, lower and remove accent, loard code and vocab, learn and apply BPE tokenization,
 # binarize...) our data contained in the text files into a pth file understandable by the framework : 
 # takes a lot of time with dataset size, nCodes and shuf_n_samples
 
 # languages 
 lgs=$1
- 
+       
+# path containing the csvs folder
+# zip_file_link (csvs) = https://drive.google.com/file/d/1NuSJ-NT_BsU1qopLu6avq6SzUEf6nVkk/view?usp=sharing
+# download and unzip in $csv_path
+csv_path=/home/jupyter
+
+# where to store the txt files
+output_dir=/home/jupyter/data/xlm_cluster4
+
 # path where processed files will be stored
-OUTPATH=/content/processed
+OUTPATH=/home/jupyter/models/africa/cluster4/data/XLM_all/processed
 
 # If parallel data is available and you need to preprocess it
 PARA=True
@@ -17,13 +26,13 @@ PARA=True
 # leave this parameter set to True, the parallel data will be used to build the monolingual data)
 MONO=True    
 # folder containing the parallel data
-PARA_PATH=/content/data/para
+PARA_PATH=$output_dir
 # folder containing the monolingual data
-MONO_PATH=/content/data/para
+MONO_PATH=$output_dir
 # whether all languages should share the same vocabulary (leave to True)
 SAME_VOCAB=True    
 # The following parameter allows, when having independent monolingual and parallel data, to add the parallel data to the monolingual data. It is left by default to True. 
-add_para_data_to_mono_data=False 
+add_para_data_to_mono_data=False
 
 # Learn nCodes BPE code on the training data
 nCodes=20000
@@ -54,9 +63,21 @@ sub_tasks=...
 ##############################################
 
 function abrev() {
-    # todo
-    result=$1
- }
+    if [[ $1 = "Francais" ]]; then
+        result="fr"
+    elif [[ $1 = "Anglais" ]]; then
+        result="en"
+    elif [[ $1 = "MKPAMAN_AMVOE_Ewondo" ]]; then
+        result="Ewon"
+    else
+        length=${#1}
+        if [[ $length -le 4 ]]; then
+            result=$1
+        else
+            result=$(echo $1 | cut -c1-4)
+        fi
+    fi
+}
 
 if [ $sub_tasks="..." ]; then
     sub_tasks=""
@@ -85,9 +106,19 @@ chmod +x $FASTBPE
 chmod +x $TOOLS_PATH/mosesdecoder/scripts/tokenizer/*.perl
 
 echo "======================="
-echo "Processed"
+echo "Extract texts files"
 echo "======================="
 
+data_type=para
+python ../scripts/bible.py --csv_path $csv_path --output_dir $output_dir --data_type $data_type --languages $lgs
+
+data_type=mono
+python ../scripts/bible.py --csv_path $csv_path --output_dir $output_dir --data_type $data_type --languages $lgs
+
+echo "======================="
+echo "Processed"
+echo "======================="
+ 
 chmod +x ../scripts/build_meta_data_multixlm.sh
 . ../scripts/build_meta_data_multixlm.sh $sub_tasks $n_samples $add_para_data_to_mono_data
 # todo : rendre les choses dynamiques comme ceci

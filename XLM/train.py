@@ -502,7 +502,11 @@ def main(params):
 def three_point(objectif, lgs, name) :
     if objectif == "..." :
         result = ""
-        #if name = "clm" : todo
+        if name == "clm" : 
+            langs = lgs.split("-")
+            result = langs[0]
+            for lg in langs[1:] :
+                result = result+","+lg
         if name == "mlm" :
             langs = lgs.split("-")
             result = langs[0]
@@ -541,7 +545,17 @@ def three_point(objectif, lgs, name) :
               result = result+","+lj+"-"+li+"-"+lj
           if result.startswith(","):
             result = result[1:]
-        #elif name == "pc" : todo
+        elif name == "pc" : 
+            langs = lgs.split("-")
+            l = len(langs)
+            for i in range(l-1):
+                for j in range(i+1, l):
+                    li = langs[i]
+                    lj = langs[j]
+                    result = result+","+li+"-"+lj
+                    result = result+","+lj+"-"+li
+            if result.startswith(","):
+                result = result[1:]
         return result
     else :      
         return objectif
@@ -550,7 +564,7 @@ def check_meta_learning_params(params) :
     """
     This method basically verifies if there is a meta-task that is not present in any objective (clm, mlm, pc, mt, ae, bt)
     """
-    for lang, clm, mlm, pc, mt, ae, bt in zip(params.langs, params.clm_steps, params.mlm_steps, params.pc_steps, params.mt_steps, params.ae_steps, params.bt_steps) :       
+    for _, clm, mlm, pc, mt, ae, bt in zip(params.langs, params.clm_steps, params.mlm_steps, params.pc_steps, params.mt_steps, params.ae_steps, params.bt_steps) :       
         assert not all([objectif == [] for objectif in [clm, mlm, pc, mt, ae, bt]]), "Every task must be present in some of objectif" 
                                     
 if __name__ == '__main__':
