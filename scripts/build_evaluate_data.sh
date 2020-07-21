@@ -5,16 +5,31 @@
 # required :
 #   src_path 
 #   tgt_path
-#   TOKENIZE
+#   TOKENIZE 
 #   threads_for_tokenizer
-#   LOWER_REMOVE_ACCENT
+#   LOWER_REMOVE_ACCENT 
 #   test_size 
 #   val_size
-#   FASTBPE
+#   FASTBPE 
 #   CODE_VOCAB_PATH
-#   duplicate
+#   duplicate 
 
 set -e
+
+if [ $val_size=0 ];then
+    duplicate=True
+elif
+    duplicate=False
+fi
+
+# tools paths
+TOOLS_PATH=tools
+TOKENIZE=$TOOLS_PATH/tokenizer_our.sh
+LOWER_REMOVE_ACCENT=$TOOLS_PATH/lowercase_and_remove_accent.py
+FASTBPE=$TOOLS_PATH/fastBPE/fast
+
+chmod +x $FASTBPE
+chmod +x $TOOLS_PATH/mosesdecoder/scripts/tokenizer/*.perl
 
 lg=$1
 N_SAMPLES=${2-'False'}

@@ -6,19 +6,21 @@
 # binarize...) our data contained in the text files into a pth file understandable by the framework : 
 # takes a lot of time with dataset size, nCodes and shuf_n_samples
 
+set -e
+
 # languages 
 lgs=$1
        
 # path containing the csvs folder
 # zip_file_link (csvs) = https://drive.google.com/file/d/1NuSJ-NT_BsU1qopLu6avq6SzUEf6nVkk/view?usp=sharing
 # download and unzip in $csv_path
-csv_path=/home/jupyter
+csv_path=/content
 
 # where to store the txt files
-output_dir=/home/jupyter/data/xlm_cluster4
+output_dir=/content/data
 
 # path where processed files will be stored
-OUTPATH=/home/jupyter/models/africa/cluster4/data/XLM_all/processed
+OUTPATH=/content/processed
 
 # If parallel data is available and you need to preprocess it
 PARA=True
@@ -62,11 +64,16 @@ sub_tasks=...
 
 ##############################################
 
+ 
 function abrev() {
     if [[ $1 = "Francais" ]]; then
         result="fr"
     elif [[ $1 = "Anglais" ]]; then
         result="en"
+    elif [[ $1 = "KALATA_KO_SC_Gbaya" ]] || [[ $1 = "KALATA_KO_DC_Gbaya" ]]; then
+        result="Gbay"
+    elif [[ $1 = "BIBALDA_TA_PELDETTA" ]]; then
+        result="MASS"
     elif [[ $1 = "MKPAMAN_AMVOE_Ewondo" ]]; then
         result="Ewon"
     else
@@ -109,11 +116,9 @@ echo "======================="
 echo "Extract texts files"
 echo "======================="
 
-data_type=para
-python ../scripts/bible.py --csv_path $csv_path --output_dir $output_dir --data_type $data_type --languages $lgs
-
-data_type=mono
-python ../scripts/bible.py --csv_path $csv_path --output_dir $output_dir --data_type $data_type --languages $lgs
+for data_type in $(echo ${2-'mono,para'} | sed -e 's/\,/ /g'); do
+    python ../scripts/bible.py --csv_path $csv_path --output_dir $output_dir --data_type $data_type --languages $lgs
+done
 
 echo "======================="
 echo "Processed"

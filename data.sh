@@ -5,6 +5,8 @@
 # binarize...) our data contained in the text files into a pth file understandable by the framework : 
 # takes a lot of time with dataset size, nCodes and shuf_n_samples
 
+set -e
+
 # languages 
 lgs=$1
  
@@ -49,7 +51,6 @@ n_samples=-1
 #sub_tasks=en-fr:10,de-en:-1,de-fr:-1
 #If you want the subtasks to be constructed from the pair combinations of your languages, put the three dots
 sub_tasks=...
-
 
 ##############################################
 

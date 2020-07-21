@@ -14,6 +14,7 @@ import copy
 import gc
 import json
 import os
+prime_string = "_prime"
 
 from src.slurm import init_signal_handler, init_distributed_mode
 from src.data.loader import check_data_params, load_data
@@ -478,10 +479,11 @@ def main(params):
                 logger.info("%s -> %.6f" % (k, v))
         else :
             for lgs in params.meta_params.keys() :
-                logger.info("============ task : %s " % lgs)
-                for k, v in scores[lgs].items():
-                    if k != "epoch":
-                        logger.info("%s -> %.6f" % (k, v))
+                if not lgs.endswith(prime_string) :
+                    logger.info("============ task : %s " % lgs)
+                    for k, v in scores[lgs].items():
+                        if k != "epoch":
+                            logger.info("%s -> %.6f" % (k, v))
             logger.info("============ all")
             for k, v in scores.items():
                 if not (k in (list(params.meta_params.keys())+['epoch'])) :
@@ -679,7 +681,11 @@ if __name__ == '__main__':
         check_data_params(params)
         check_model_params(params)    
         
-        params.meta_params[lgs] = copy.deepcopy(params)
+        try :
+            params.meta_params[lgs]
+            params.meta_params[lgs + prime_string] = copy.deepcopy(params)
+        except KeyError :
+            params.meta_params[lgs] = copy.deepcopy(params)
         
         langs.append(params.langs)
         clms.append(params.clm_steps)

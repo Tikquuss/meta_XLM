@@ -2,6 +2,8 @@
 
 # Usage : ./opuss.sh $lang_pair
 
+# required :
+
 # All conditions are there to allow the script to resume or it stopped in case of a sudden stop.
 
 pair=$1  # input language pair

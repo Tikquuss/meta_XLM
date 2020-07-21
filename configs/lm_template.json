@@ -5,7 +5,7 @@
     "encoder_only":"False",
     "data_path":"your data path", 
     "lgs":"de-en-fr", 
-    "clm_steps":"",
+    "clm_steps":"...",
     "mlm_steps":"...", 
     "mt_steps":"",
     "ae_steps":"", 

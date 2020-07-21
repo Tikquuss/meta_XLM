@@ -138,7 +138,7 @@ See [HowToTrainYourMAMLPytorch](https://github.com/AntreasAntoniou/HowToTrainYou
 
 ## III. Train your own (meta-)model
 
-#### 1. Preparing the data 
+### 1. Preparing the data 
 
 At this level, if you have pre-processed binary data in pth format (for example from XLM experimentation or improvised by yourself), group them in a specific folder that you will mention as a parameter by calling the script [train.py](XLM/train.py).  
 If this is not the case, we assume that you have txt files available for preprocessing. Look at the following example for which we have three translation tasks: English-French, German-English and German-French (see this [notebooks](notebooks/enfrde.ipynb) for details on the following).
@@ -176,7 +176,9 @@ git clone https://github.com/moses-smt/mosesdecoder
 git clone https://github.com/glample/fastBPE && cd fastBPE && g++ -std=c++11 -pthread -O3 fastBPE/main.cc -IfastBPE -o fast
 ```
 
-Return to the `XLM` folder
+Return to the `XLM` folder.  
+Changing parameters in [data.sh](data.sh).  
+With too many BPE codes (depending on the size of the dataset) you may get this [error](https://github.com/glample/fastBPE/issues/7). Decrease the number of codes (e.g. you can dichotomously search for the appropriate/maximum number of codes that make the error disappear)
 
 ```
 languages=de,en,fr
@@ -208,9 +210,14 @@ After this you will have the following (necessary) files in `$OUTPATH` (and `$OU
         - valid.de-fr.de.pth and valid.de-fr.fr.pth 
  - code and vocab
 ```
-To use the biblical corpus, run [bible.sh](bible.sh) instead of [data.sh](data.sh)
+To use the biblical corpus, run [bible.sh](bible.sh) instead of [data.sh](data.sh). Here is the list of languages available (and to be specified as $languages value) in this case : 
+- Languages with data in the New and Old Testament : Francais, Anglais, Fulfulde_Adamaoua or Fulfulde_DC (formal name : Fulfulde), Bulu, KALATA_KO_SC_Gbaya or KALATA_KO_DC_Gbaya (formal name :  Gbaya), BIBALDA_TA_PELDETTA (formal name : MASSANA), Guiziga, Kapsiki_DC (formal name : Kapsiki), Tupurri.
+- Languages with data in the New Testament only : Bafia, Ejagham, Ghomala, MKPAMAN_AMVOE_Ewondo (formal name : Ewondo), Ngiemboon, Dii, Vute, Limbum, Mofa, Mofu_Gudur, Doyayo, Guidar, Peere_Nt&Psalms, Samba_Leko, Du_na_sdik_na_wiini_Alaw.  
+It is specified in [bible.sh](bible.sh) that you must have in `csv_path` a folder named csvs. Here is the [drive link](https://drive.google.com/file/d/1NuSJ-NT_BsU1qopLu6avq6SzUEf6nVkk/view?usp=sharing) of its zipped version.
+Concerning training, specify the first four letters of each language (Bafi instead of Bafia for example), except KALATA_KO_SC_Gbaya/KALATA_KO_DC_Gbaya which becomes Gbay (first letters of Gbaya), BIBALDA_TA_PELDETTA which becomes MASS (first letters of MASSANA), MKPAMAN_AMVOE_Ewondo which becomes Ewon (first letters of Ewondo), Francais and Anglais which becomes repectively fr and en. Indeed, [bible.sh](bible.sh) uses these abbreviations to create the files and not the language names themselves.
+One last thing in the case of the biblical corpus is that when only one language is to be specified, it must be specified twice. For example: `languages=Bafia,Bafia` instead of `languages=Bafia`.
 
-#### 2. Pretrain a language meta-model 
+### 2. Pretrain a language (meta-)model 
 
 Install the following dependencie ([Apex](https://github.com/nvidia/apex#quick-start)) if you have not already done so.
 ```
@@ -223,7 +230,31 @@ Instead of passing all the parameters of train.py, put them in a json file and s
 config_file=/configs/lm_template.json
 python train.py --config_file $config_file
 ```
-When "mlm_steps":"...", train.py automatically uses the languages to have `"mlm_steps":"de,en,fr,de-en,de-fe,en-fr"` (Give a precise value to x if you don't want to do all MLM and TLM, example : `"mlm_steps":"en,fr,en-fr"`)
+When `"mlm_steps":"..."`, train.py automatically uses the languages to have `"mlm_steps":"de,en,fr,de-en,de-fe,en-fr"` (Give a precise value to mlm_steps if you don't want to do all MLM and TLM, example : `"mlm_steps":"en,fr,en-fr"`). This also applies to `"clm_steps":"..."` which deviates `"clm_steps":"de,en,fr"` in this case.    
+
+Note :  
+-`en` means MLM on `en`, and requires the following three files in `data_path`: a.en.pth, a ∈ {train, test, valid} (monolingual data)  
+-`en-fr` means TLM on `en and fr`, and requires the following six files in `data_path`: a.en-fr.b.pth, a ∈ {train, test, valid} and b ∈ {en, fr} (parallel data)  
+-`en,fr,en-fr` means MLM+TLM on `en, fr, en and fr`, and requires the following twelve files in `data_path`: a.b.pth and a.en-fr.b.pth, a ∈ {train, test, valid} and b ∈ {en, fr}  
+
+To [train with multiple GPUs](https://github.com/facebookresearch/XLM#how-can-i-run-experiments-on-multiple-gpus) use:
+```
+export NGPU=8; python -m torch.distributed.launch --nproc_per_node=$NGPU train.py
+```
+
+**Tips**: Even when the validation perplexity plateaus, keep training your model. The larger the batch size the better (so using multiple GPUs will improve performance). Tuning the learning rate (e.g. [0.0001, 0.0002]) should help.
+
+In the case of <b>metalearning</b>, you just have to specify your meta-task separated by `|` in `lgs` and `objectives (clm_steps, mlm_steps, ae_steps, mt_steps, bt_steps and pc_steps)`.  
+For example, if you only want to do metalearning (without doing XLM) in our case, you have to specify these parameters: `"lgs":"de-en|de-fr|en-fr"`, `"clm_steps":"...|...|..."` and/or `"mlm_steps":"...|...|..."`. These last two parameters, if specified as such, will become respectively `"clm_steps":"de,en|de,fr|en,fr"` and/or `"mlm_steps":"de,en,de-en|de,fr,de-fr|en,fr,en-fr"`.  
+The passage of the three points follows the same logic as above. That is to say that if at the level of the meta-task `de-en`:  
+	- we only want to do MLM (without TLM): `mlm_steps` becomes `"mlm_steps": "de,en|...|..."`  
+	- we don't want to do anything: `mlm_steps` becomes `"mlm_steps":"|...|..."`.
+
+It is also not allowed to specify a meta-tack that has no purpose. In our case, `"clm_steps":"...||..."` and/or `"mlm_steps":"...||..."` will generate an exception, in which case the meta-task `de-fr` (second task) has no objective.
+
+If you want to do metalearning and XLM simultaneously : 
+- `"lgs":"de-en-fr|de-en-fr|de-en-fr"` 
+- Follow the same logic as described above for the other parameters.
 
 ###### Description of some essential parameters
 
@@ -270,27 +301,28 @@ remove_long_sentences_test False
 
 ###### There are other parameters that are not specified here (see [train.py](XLM/train.py))
 
-If parallel data is available for each meta-task, the TLM objective can be used with `--mlm_steps 'en-fr|en-de|de-fr'`. To train with both the MLM and TLM objective for each meta-task, you can use `--mlm_steps 'en,fr,en-fr|en,de,en-de|de,fr,de-fr'`. 
+### 3. Train a (unsupervised/supervised) MT from a pretrained meta-model 
 
-To [train with multiple GPUs](https://github.com/facebookresearch/XLM#how-can-i-run-experiments-on-multiple-gpus) use:
-```
-export NGPU=8; python -m torch.distributed.launch --nproc_per_node=$NGPU train.py
-```
-
-**Tips**: Even when the validation perplexity plateaus, keep training your model. The larger the batch size the better (so using multiple GPUs will improve performance). Tuning the learning rate (e.g. [0.0001, 0.0002]) should help.
-
-#### 3. Train a (unsupervised/supervised) MT from a pretrained meta-model 
-
-See [mt_template.json](configs/mt_template.json) file for more details).
+See [mt_template.json](configs/mt_template.json) file for more details.
 ```
 config_file=/configs/mt_template.json
 python train.py --config_file $config_file
 ```
+
+When the `ae_steps` and `bt_steps` objects alone are specified, this is unsupervised machine translation, and only requires monolingual data. If the parallel data is available, give `mt_step` a value based on the language pairs for which the data is available.  
+All comments made above about parameter passing and <b>metalearning</b> remain valid here : if you want to exclude a meta-task in an objective, put a blank in its place. Suppose, in the case of <b>metalearning</b>, we want to exclude from `"ae_steps":"en,fr|en,de|de-fr"` the meta-task:
+- `de-en` : `ae_steps`  becomes `"ae_steps":"en,fr||de-fr"` 
+- `de-fr` : `ae_steps`  becomes `"ae_steps":"en,fr|de,en|"`  
+
 ###### Description of some essential parameters  
 The description made above remains valid here
 ```
+## main parameters
+reload_model     # model to reload for encoder,decoder
+## data location / training objective
 ae_steps          # denoising auto-encoder training steps
 bt_steps          # back-translation steps
+mt_steps          # parallel training steps
 word_shuffle      # noise for auto-encoding loss
 word_dropout      # noise for auto-encoding loss
 word_blank        # noise for auto-encoding loss
@@ -305,47 +337,44 @@ eval_bleu         # also evaluate the BLEU score
 ```
 ###### There are other parameters that are not specified here (see [train.py](XLM/train.py))
 
-Above training is unsupervised. For a supervised nmt, add `--mt_steps 'en-fr,fr-en|en-de,de-en|de-fr,fr-de'` if parallel data is available.  
 
-Here we have mentioned the objectives for each meta-task. If you want to exclude a meta-task in an objective, put a blank in its place. Suppose we want to exclude from `ae_steps 'en,fr|en,de|de-fr` the meta-task:
-- de-en : `ae_steps 'en,fr||de-fr'` 
-- de-fr : `ae_steps 'en,fr|de,en|'`
-
-### 4. Fine-tune the meta-model on a specific (sub) nmt (meta) task (case of metalearning)
+### 4. case of metalearning : optionally fine-tune the meta-model on a specific (sub) nmt (meta) task 
 
 At this point, if your fine-tuning data did not come from the previous pre-processing, you can just prepare your txt data and call the script build_meta_data.sh with the (sub) task in question. Since the codes and vocabulary must be preserved, we have prepared another script ([build_fine_tune_data.sh](scripts/build_fine_tune_data.sh)) in which we directly apply BPE tokenization on dataset and binarize everything using preprocess.py based on the codes and vocabulary of the meta-model. So we have to call this script for each subtask like this :
 
 ```
-goal=fine_tune 
-CODE_VOCAB_PATH=/content/Bafi
-chmod +x ../preprocess.sh 
-../preprocess.sh $languages
+languages = 
+chmod +x ../ft_data.sh
+../ft_data.sh $languages
 ```
 
-Let's consider the sub-task en-fr.  
-At this stage you can use one of the two previously trained meta-models: pre-formed meta-model or meta-MT formed from the pre-formed meta-model. But here we use the second model, because we intuitively believe that it will be more efficient than the first one.
-
-Move to the `XLM` folder in advance.
-
-See [mt_template.json](configs/mt_template.json) file for more details).
-```
-config_file=/configs/mt_template.json
-python train.py --config_file $config_file
-```
-
-Above training is unsupervised. For a supervised nmt, add `--mt_steps 'en-fr,fr-en'` if parallel data is available.
+At this stage, restart the training as in the previous section with :
+- lgs="en-fr"
+- reload_model = path to the folder where you stored the meta-model
+- `bt_steps'':"..."`, `ae_steps'':"..."` and/or `mt_steps'':"..."` (replace the three bullet points with your specific objectives if any)  
+You can use one of the two previously trained meta-models: pre-formed meta-model (MLM, TLM) or meta-MT formed from the pre-formed meta-model. 
 
 ### 5. How to evaluate a language model trained on a language L on another language L'.
 
+###### Data pre-processing
 ```
-goal=evaluation
-CODE_VOCAB_PATH=/content/Bafi
-chmod +x ../preprocess.sh 
-../preprocess.sh $languages
+languages=lang1,lang2,... # langues à évaluer
+chmod +x ../eval_data.sh 
+../eval_data.sh $languages
 ```
 
+###### Evaluation 
+```
+tgt_pair=langue(s) qui évalue(ent) 
+src_path=dossier contenant les données sur lesquelles on évalue (doit correspondre à $tgt_path dans eval_data.sh)
+# Il faut changer deux parametres dans le fichier de configuration utilisé pour entrainer le LM qui évalue ("data_path":"$src_path" et "eval_only":"True")
+config_file=/configs/lm_template.json # doit être identique aux détails cités ci-dessus pres au fichier utilisé pour entrainé le LM qui évalue
+chmod +x ../scripts/evaluate.sh
+eval_lang=langue(s) qu'on évalue(ent) 
+../scripts/evaluate.sh $eval_lang
+```
 
-## References
+## IV. References
 
 Please cite [[1]](https://arxiv.org/abs/1901.07291) and [[2]](https://arxiv.org/abs/1911.02116) if you found the resources in this repository useful.
 
