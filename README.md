@@ -141,42 +141,43 @@ See [HowToTrainYourMAMLPytorch](https://github.com/AntreasAntoniou/HowToTrainYou
 ### 1. Preparing the data 
 
 At this level, if you have pre-processed binary data in pth format (for example from XLM experimentation or improvised by yourself), group them in a specific folder that you will mention as a parameter by calling the script [train.py](XLM/train.py).  
-If this is not the case, we assume that you have txt files available for preprocessing. Look at the following example for which we have three translation tasks: English-French, German-English and German-French (see this [notebooks](notebooks/enfrde.ipynb) for details on the following).
+If this is not the case, we assume that you have txt files available for preprocessing. Look at the following example for which we have three translation tasks: `English-French, German-English and German-French`.
 
 We have the following files available for preprocessing: 
+```
 - en-fr.en.txt and en-fr.fr.txt 
 - de-en.de.txt and de-en.en.txt 
 - de-fr.de.txt and de-fr.fr.txt 
-
+```
 All these files must be in the same folder (`PARA_PATH`).  
-You can also (and optionally) have monolingual data available (en.txt, de.txt and fr.txt; in `MONO_PATH` folder).  
+You can also (only or optionally) have monolingual data available (`en.txt, de.txt and fr.txt`; in `MONO_PATH` folder).  
 Parallel and monolingual data can all be in the same folder.
 
-Note : Languages must be submitted in alphabetical order (de-en and not en-de, fr-ru and not ru-fr ...). If you submit them in any order you will have problems loading data during training, because when you run the [train.py](XLM/train.py) script the parameters like the language pair are put back in alphabetical order before being processed. Don't worry about this alphabetical order restriction, XLM for MT is naturally trained to translate sentences in both directions. See [translate.py](scripts/translate.py).
+**Note** : Languages must be submitted in alphabetical order (`de-en and not en-de, fr-ru and not ru-fr...`). If you submit them in any order you will have problems loading data during training, because when you run the [train.py](XLM/train.py) script the parameters like the language pair are put back in alphabetical order before being processed. Don't worry about this alphabetical order restriction, XLM for MT is naturally trained to translate sentences in both directions. See [translate.py](scripts/translate.py).
 
 [OPUS collections](http://opus.nlpl.eu/) is a good source of dataset. We illustrate in the [opus.sh](scripts/opus.sh) script how to download the data from opus and convert it to a text file. 
 
-Another source for other_languages-english data is [anki Tab-delimited Bilingual Sentence Pairs](http://www.manythings.org/anki/). Simply download the .zip file, unzip to extract the other_language.txt file. This file usually contains data in the form of `sentence_en sentence_other_language other_information` on each line. See [anki.py](scripts/anki.py) and [anky.sh](scripts/anki.sh) in relation to a how to extract data from [anki](http://www.manythings.org/anki/). Example of how to download and extract de-en pair data.
+Another source for `other_languages-english` data is [anki Tab-delimited Bilingual Sentence Pairs](http://www.manythings.org/anki/). Simply download the .zip file, unzip to extract the `other_language.txt` file. This file usually contains data in the form of `sentence_en sentence_other_language other_information` on each line. See [anki.py](scripts/anki.py) and [anky.sh](scripts/anki.sh) in relation to a how to extract data from [anki](http://www.manythings.org/anki/). Example of how to download and extract `de-en` pair data.
 ```
 cd meta_XLM
 output_path=XLM/data/para
 mkdir $output_path
-chmod +x scripts/anki.sh
-./anki.sh de,en deu-eng $output_path scripts/anki.py
-#./anki.sh en,fr fra-eng $output_path scripts/anki.py
+chmod +x ./scripts/anki.sh
+./script/anki.sh de,en deu-eng $output_path scripts/anki.py
+#./script/anki.sh en,fr fra-eng $output_path scripts/anki.py
 ```
-After that you will have in `data/para` following files : de-en.de.txt, de-en.en.txt, deu.txt, deu-eng.zip and _about.txt  
+After that you will have in `data/para` following files : `de-en.de.txt, de-en.en.txt, deu.txt, deu-eng.zip and _about.txt`  
 
 Move to the `XLM` folder in advance.  
-
+```
+cd XLM
+```
 Install the following dependencies ([fastBPE](https://github.com/facebookresearch/XLM/tree/master/tools#fastbpe) and [Moses](https://github.com/facebookresearch/XLM/tree/master/tools#tokenizers)) if you have not already done so. 
 ```
-cd tools
-git clone https://github.com/moses-smt/mosesdecoder
-git clone https://github.com/glample/fastBPE && cd fastBPE && g++ -std=c++11 -pthread -O3 fastBPE/main.cc -IfastBPE -o fast
+git clone https://github.com/moses-smt/mosesdecoder tools/mosesdecoder
+git clone https://github.com/glample/fastBPE tools/fastBPE && cd tools/fastBPE && g++ -std=c++11 -pthread -O3 fastBPE/main.cc -IfastBPE -o fast
 ```
-
-Return to the `XLM` folder.  
+  
 Changing parameters in [data.sh](data.sh).  
 With too many BPE codes (depending on the size of the dataset) you may get this [error](https://github.com/glample/fastBPE/issues/7). Decrease the number of codes (e.g. you can dichotomously search for the appropriate/maximum number of codes that make the error disappear)
 
@@ -210,11 +211,11 @@ After this you will have the following (necessary) files in `$OUTPATH` (and `$OU
         - valid.de-fr.de.pth and valid.de-fr.fr.pth 
  - code and vocab
 ```
-To use the biblical corpus, run [bible.sh](bible.sh) instead of [data.sh](data.sh). Here is the list of languages available (and to be specified as $languages value) in this case : 
-- Languages with data in the New and Old Testament : Francais, Anglais, Fulfulde_Adamaoua or Fulfulde_DC (formal name : Fulfulde), Bulu, KALATA_KO_SC_Gbaya or KALATA_KO_DC_Gbaya (formal name :  Gbaya), BIBALDA_TA_PELDETTA (formal name : MASSANA), Guiziga, Kapsiki_DC (formal name : Kapsiki), Tupurri.
-- Languages with data in the New Testament only : Bafia, Ejagham, Ghomala, MKPAMAN_AMVOE_Ewondo (formal name : Ewondo), Ngiemboon, Dii, Vute, Limbum, Mofa, Mofu_Gudur, Doyayo, Guidar, Peere_Nt&Psalms, Samba_Leko, Du_na_sdik_na_wiini_Alaw.  
-It is specified in [bible.sh](bible.sh) that you must have in `csv_path` a folder named csvs. Here is the [drive link](https://drive.google.com/file/d/1NuSJ-NT_BsU1qopLu6avq6SzUEf6nVkk/view?usp=sharing) of its zipped version.
-Concerning training, specify the first four letters of each language (Bafi instead of Bafia for example), except KALATA_KO_SC_Gbaya/KALATA_KO_DC_Gbaya which becomes Gbay (first letters of Gbaya), BIBALDA_TA_PELDETTA which becomes MASS (first letters of MASSANA), MKPAMAN_AMVOE_Ewondo which becomes Ewon (first letters of Ewondo), Francais and Anglais which becomes repectively fr and en. Indeed, [bible.sh](bible.sh) uses these abbreviations to create the files and not the language names themselves.
+To use the biblical corpus, run [bible.sh](bible.sh) instead of [data.sh](data.sh). Here is the list of languages available (and to be specified as `$languages` value) in this case : 
+- **Languages with data in the New and Old Testament** : `Francais, Anglais, Fulfulde_Adamaoua or Fulfulde_DC (formal name : Fulfulde), Bulu, KALATA_KO_SC_Gbaya or KALATA_KO_DC_Gbaya (formal name :  Gbaya), BIBALDA_TA_PELDETTA (formal name : MASSANA), Guiziga, Kapsiki_DC (formal name : Kapsiki), Tupurri`.
+- **Languages with data in the New Testament only** : `Bafia, Ejagham, Ghomala, MKPAMAN_AMVOE_Ewondo (formal name : Ewondo), Ngiemboon, Dii, Vute, Limbum, Mofa, Mofu_Gudur, Doyayo, Guidar, Peere_Nt&Psalms, Samba_Leko, Du_na_sdik_na_wiini_Alaw`.  
+It is specified in [bible.sh](bible.sh) that you must have in `csv_path` a folder named csvs. Here is the [drive link](https://drive.google.com/file/d/1NuSJ-NT_BsU1qopLu6avq6SzUEf6nVkk/view?usp=sharing) of its zipped version.  
+Concerning training, specify the first four letters of each language (`Bafi` instead of `Bafia` for example), except `KALATA_KO_SC_Gbaya/KALATA_KO_DC_Gbaya which becomes Gbay (first letters of Gbaya), BIBALDA_TA_PELDETTA which becomes MASS (first letters of MASSANA), MKPAMAN_AMVOE_Ewondo which becomes Ewon (first letters of Ewondo), Francais and Anglais which becomes repectively fr and en`. Indeed, [bible.sh](bible.sh) uses these abbreviations to create the files and not the language names themselves.  
 One last thing in the case of the biblical corpus is that when only one language is to be specified, it must be specified twice. For example: `languages=Bafia,Bafia` instead of `languages=Bafia`.
 
 ### 2. Pretrain a language (meta-)model 
@@ -227,19 +228,19 @@ pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cud
 
 Instead of passing all the parameters of train.py, put them in a json file and specify the path to this file in parameter (See [lm_template.json](configs/lm_template.json) file for more details).
 ```
-config_file=/configs/lm_template.json
+config_file=../configs/lm_template.json
 python train.py --config_file $config_file
 ```
-When `"mlm_steps":"..."`, train.py automatically uses the languages to have `"mlm_steps":"de,en,fr,de-en,de-fe,en-fr"` (Give a precise value to mlm_steps if you don't want to do all MLM and TLM, example : `"mlm_steps":"en,fr,en-fr"`). This also applies to `"clm_steps":"..."` which deviates `"clm_steps":"de,en,fr"` in this case.    
+When `"mlm_steps":"..."`, train.py automatically uses the languages to have `"mlm_steps":"de,en,fr,de-en,de-fe,en-fr"` (give a precise value to mlm_steps if you don't want to do all MLM and TLM, example : `"mlm_steps":"en,fr,en-fr"`). This also applies to `"clm_steps":"..."` which deviates `"clm_steps":"de,en,fr"` in this case.    
 
 Note :  
--`en` means MLM on `en`, and requires the following three files in `data_path`: a.en.pth, a ∈ {train, test, valid} (monolingual data)  
--`en-fr` means TLM on `en and fr`, and requires the following six files in `data_path`: a.en-fr.b.pth, a ∈ {train, test, valid} and b ∈ {en, fr} (parallel data)  
--`en,fr,en-fr` means MLM+TLM on `en, fr, en and fr`, and requires the following twelve files in `data_path`: a.b.pth and a.en-fr.b.pth, a ∈ {train, test, valid} and b ∈ {en, fr}  
+-`en` means MLM on `en`, and requires the following three files in `data_path`: `a.en.pth, a ∈ {train, test, valid} (monolingual data)`  
+-`en-fr` means TLM on `en and fr`, and requires the following six files in `data_path`: `a.en-fr.b.pth, a ∈ {train, test, valid} and b ∈ {en, fr} (parallel data)`  
+-`en,fr,en-fr` means MLM+TLM on `en, fr, en and fr`, and requires the following twelve files in `data_path`: `a.b.pth and a.en-fr.b.pth, a ∈ {train, test, valid} and b ∈ {en, fr}`  
 
 To [train with multiple GPUs](https://github.com/facebookresearch/XLM#how-can-i-run-experiments-on-multiple-gpus) use:
 ```
-export NGPU=8; python -m torch.distributed.launch --nproc_per_node=$NGPU train.py
+export NGPU=8; python -m torch.distributed.launch --nproc_per_node=$NGPU train.py --config_file $config_file
 ```
 
 **Tips**: Even when the validation perplexity plateaus, keep training your model. The larger the batch size the better (so using multiple GPUs will improve performance). Tuning the learning rate (e.g. [0.0001, 0.0002]) should help.
@@ -250,7 +251,7 @@ The passage of the three points follows the same logic as above. That is to say 
 	- we only want to do MLM (without TLM): `mlm_steps` becomes `"mlm_steps": "de,en|...|..."`  
 	- we don't want to do anything: `mlm_steps` becomes `"mlm_steps":"|...|..."`.
 
-It is also not allowed to specify a meta-tack that has no purpose. In our case, `"clm_steps":"...||..."` and/or `"mlm_steps":"...||..."` will generate an exception, in which case the meta-task `de-fr` (second task) has no objective.
+It is also not allowed to specify a meta-task that has no objective. In our case, `"clm_steps":"...||..."` and/or `"mlm_steps":"...||..."` will generate an exception, in which case the meta-task `de-fr` (second task) has no objective.
 
 If you want to do metalearning and XLM simultaneously : 
 - `"lgs":"de-en-fr|de-en-fr|de-en-fr"` 
@@ -294,9 +295,9 @@ valid_n_samples              # Just consider valid_n_sample validation data
 test_n_samples               # Just consider test_n_sample test data for
 #### If you don't have enough RAM/GPU or swap memory, leave these three parameters to True, otherwise you may get an error like this when evaluating :
 ###### RuntimeError: copy_if failed to synchronize: cudaErrorAssert: device-side assert triggered
-remove_long_sentences_train True      
-remove_long_sentences_valid False     
-remove_long_sentences_test False      
+remove_long_sentences_train # remove long sentences in train dataset      
+remove_long_sentences_valid # remove long sentences in valid dataset  
+remove_long_sentences_test  # remove long sentences in test dataset  
 ```
 
 ###### There are other parameters that are not specified here (see [train.py](XLM/train.py))
@@ -356,23 +357,58 @@ You can use one of the two previously trained meta-models: pre-formed meta-model
 
 ### 5. How to evaluate a language model trained on a language L on another language L'.
 
-###### Data pre-processing
+###### Prerequisite
+If you want to evaluate the LM on a language `lang`, you must first have a file named `lang.txt` in the `$src_path` directory of [eval_data.sh](eval_data.sh).  
+For examplel if you want to use the biblical corpus, you can run [scripts/bible.py](scripts/bible.py) :
 ```
-languages=lang1,lang2,... # langues à évaluer
+# folder containing the csvs folder
+csv_path=
+# folder in which the objective folders will be created (mono or para)
+output_dir=
+# monolingual one ("mono") or parallel one ("para")
+data_type=mono
+# list of languages to be considered in alphabetical order and separated by a comma
+# case of one language
+languages=lang,lang  
+# case of many languages
+languages=lang1,lang2,...   
+old_only : use only old testament
+#  use only new testament
+new_only=True
+
+python ../scripts/bible.py --csv_path $csv_path --output_dir $output_dir --data_type $data_type --languages $languages --new_only $new_only
+```
+See other parameters in [scripts/bible.py](scripts/bible.py)
+
+###### Data pre-processing
+Modify parameters in [eval_data.sh](eval_data.sh)
+```
+# languages to be evaluated
+languages=lang1,lang2,... 
 chmod +x ../eval_data.sh 
 ../eval_data.sh $languages
 ```
 
 ###### Evaluation 
+
+We take the language to evaluate (say `Bulu`), replace the files `test.Bulu.pth` (which was created with the `VOCAB` and `CODE` of `Bafi`, the evaluating language) with `test.Bafi.pth` (since `Bafi` evaluates, the `train.py` script requires that the dataset has the (part of the) name of the `lgs`). Then we just run the evaluation, the results (acc and ppl) we get is the result of LM Bafia on the Bulu language.
+
 ```
-tgt_pair=langue(s) qui évalue(ent) 
-src_path=dossier contenant les données sur lesquelles on évalue (doit correspondre à $tgt_path dans eval_data.sh)
-# Il faut changer deux parametres dans le fichier de configuration utilisé pour entrainer le LM qui évalue ("data_path":"$src_path" et "eval_only":"True")
-config_file=/configs/lm_template.json # doit être identique aux détails cités ci-dessus pres au fichier utilisé pour entrainé le LM qui évalue
+# evaluating language
+tgt_pair=
+# folder containing the data to be evaluated (must match $tgt_path in eval_data.sh)
+src_path=
+# You have to change two parameters in the configuration file used to train the LM which evaluates ("data_path":"$src_path" and "eval_only": "True")
+config_file=/configs/lm_template.json 
+# languages to be evaluated
+eval_lang= 
 chmod +x ../scripts/evaluate.sh
-eval_lang=langue(s) qu'on évalue(ent) 
 ../scripts/evaluate.sh $eval_lang
 ```
+
+The description given below is only valid when the LM evaluator has been trained on only one language (and therefore without TLM). But let's consider the case where the basic LM has been trained on `en-fr` and we want to evaluate it on `de` or `de-ru`. `$tgt_pair` deviates from `en-fr`, but `language` varies depending on whether the evaluation is going to be done on one language or two:  
+- In the case of `de` : `lang=de-de`  
+- in the case of `de-ru`: `lang=de-ru`.
 
 ## IV. References
 

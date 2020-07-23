@@ -18,7 +18,7 @@ set -e
 
 if [ $val_size=0 ];then
     duplicate=True
-elif
+else
     duplicate=False
 fi
 

@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# usage : bible.sh $languages
+# usage : bible.sh $languages $data_type
+# data_type : mono or para or mono,para
 # download and processed bible data
 # Transform (tokenize, lower and remove accent, loard code and vocab, learn and apply BPE tokenization,
 # binarize...) our data contained in the text files into a pth file understandable by the framework : 
@@ -60,7 +61,7 @@ n_samples=-1
 #sub_tasks=en-fr:10,de-en:-1,de-fr:-1
 #If you want the subtasks to be constructed from the pair combinations of your languages, put the three dots
 sub_tasks=...
-
+tasks_n_samples=-1
 
 ##############################################
 
@@ -97,7 +98,7 @@ if [ $sub_tasks="..." ]; then
             a=$result
             abrev ${langs_array[$j]} 
             b=$result
-        	sub_tasks=$sub_tasks,$a-$b:-1
+        	sub_tasks=$sub_tasks,$a-$b:$tasks_n_samples
 		done
 	done
 	# Remove the comma in front

@@ -5,7 +5,7 @@ lgs=$1
 tgt_path=$src_path
 
 # creation of the dummy files (train) so that the experiment does not bug
-touch /content/eval_Bafia_tmp/train.Bafi.pth
+touch $src_path/train.$tgt_pair.pth
 
 chmod +x ../scripts/duplicate.sh
 chmod +x ../scripts/delete.sh

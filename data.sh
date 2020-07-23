@@ -51,6 +51,7 @@ n_samples=-1
 #sub_tasks=en-fr:10,de-en:-1,de-fr:-1
 #If you want the subtasks to be constructed from the pair combinations of your languages, put the three dots
 sub_tasks=...
+tasks_n_samples=-1
 
 ##############################################
 
@@ -70,7 +71,7 @@ if [ $sub_tasks="..." ]; then
             a=$result
             abrev ${langs_array[$j]} 
             b=$result
-        	sub_tasks=$sub_tasks,$a-$b:-1
+        	sub_tasks=$sub_tasks,$a-$b:$tasks_n_samples
 		done
 	done
 	# Remove the comma in front

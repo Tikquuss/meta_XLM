@@ -6,6 +6,8 @@ data_type (optional, default = "para") : monolingual one ("mono") or parallel on
 languages (optional, default = langues_nt) : list of languages to be considered in alphabetical order and separated by a comma : e.g. 'Bafia,Bulu,Ewondo'. (these languages must be included in the list of languages)
 books (optional, defautlt = livres_all) : list of the books of the bibles to be considered separated by a comma (there must exist for each of these books a books.csv file in csv_path/csvs/)
 cell_error (optional, defautlt = "__Error__") : text to be used to mark erroneous text pairs during webscrapping (these pairs are excluded from the data)    
+old_only : use only old testament
+new_only : use only new testament
 """
 
 import argparse
