@@ -306,7 +306,7 @@ remove_long_sentences_test  # remove long sentences in test dataset
 
 See [mt_template.json](configs/mt_template.json) file for more details.
 ```
-config_file=/configs/mt_template.json
+config_file=../configs/mt_template.json
 python train.py --config_file $config_file
 ```
 
@@ -399,7 +399,7 @@ tgt_pair=
 # folder containing the data to be evaluated (must match $tgt_path in eval_data.sh)
 src_path=
 # You have to change two parameters in the configuration file used to train the LM which evaluates ("data_path":"$src_path" and "eval_only": "True")
-config_file=/configs/lm_template.json 
+config_file=../configs/lm_template.json 
 # languages to be evaluated
 eval_lang= 
 chmod +x ../scripts/evaluate.sh
