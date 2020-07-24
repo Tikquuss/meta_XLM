@@ -32,8 +32,8 @@ abreviation = {
     "Francais":"fr", "Anglais":"en",
     #"ar", "bg", "de", "el", "en", "es", "fr", "hi", "ru", "sw", "th", "tr", "ur", "vi", "zh", "ab", "ay", "bug", "ha", "ko", 
     #"ln", "min", "nds", "pap", "pt", "tg", "to", "udm", "uk", "zh_classical"
-    "BIBALDA_TA_PELDETTA":"BIBA", "Bulu":"Bulu", "Guiziga":"Guiz", "Fulfulde_Adamaoua":"Fulf",  
-    "Fulfulde_DC":"Fulf", "KALATA_KO_SC_Gbaya":"KALA", "KALATA_KO_DC_Gbaya":"KALA", 
+    "BIBALDA_TA_PELDETTA":"MASS", "Bulu":"Bulu", "Guiziga":"Guiz", "Fulfulde_Adamaoua":"Fulf",  
+    "Fulfulde_DC":"Fulf", "KALATA_KO_SC_Gbaya":"Gbay", "KALATA_KO_DC_Gbaya":"Gbay", 
     "Kapsiki_DC":"Kaps", "Tupurri":"Tupu",
     ##############
     "Bafia":"Bafi", "Dii":"Dii", "Ejagham":"Ejag", "Ghomala":"Ghom", "Vute":"Vute", "Limbum":"Limb", 

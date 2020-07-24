@@ -89,7 +89,7 @@ function abrev() {
 
 if [ $sub_tasks="..." ]; then
     sub_tasks=""
-	IFS=', ' read -r -a langs_array <<< "$languages"
+	IFS=', ' read -r -a langs_array <<< "$lgs"
 	# todo : sort the array in alphebical oder
 	array_length=${#langs_array[*]}
 	for (( i=0; i<$array_length; ++i)); do 

@@ -301,10 +301,11 @@ def main(params):
                 logger.info("%s -> %.6f" % (k, v))
         else :
             for lgs in params.meta_params.keys() :
-                logger.info("============ task : %s " % lgs)
-                for k, v in scores[lgs].items():
-                    if k != "epoch":
-                        logger.info("%s -> %.6f" % (k, v))
+                if not lgs.endswith(prime_string) :
+                    logger.info("============ task : %s " % lgs)
+                    for k, v in scores[lgs].items():
+                        if k != "epoch":
+                            logger.info("%s -> %.6f" % (k, v))
             logger.info("============ all")
             for k, v in scores.items():
                 if not (k in (list(params.meta_params.keys())+['epoch'])) :
@@ -454,13 +455,13 @@ def main(params):
                     # back-translation steps
                     f = trainer.bt_step(lang1_dic['bt_step'] , lang2_dic['bt_step'], lang3_dic['bt_step'], params.lambda_bt, data_keys_dic['bt_step'])    
                     
-                    # do things better
+                    # todo : do things better
                     if (not a) and (not b) and (not c) and (not d) and (not e) and (not f) :
                         flag = False # End of epoch
                     else :
                         flag = True
                 else :
-                    # do things better
+                    # todo : do things better
                     if (not a) and (not b) and (not c) :
                         flag = False # End of epoch
                     else :

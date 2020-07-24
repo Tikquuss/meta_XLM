@@ -458,7 +458,7 @@ echo "***Creat the file to train the XLM model with MLM+TLM objective***"
 for pair in $(echo $sub_tasks | sed -e 's/\,/ /g'); do
     for lg in $(echo $pair | sed -e 's/\-/ /g'); do
         for split in train valid test; do
-            if [ ! -f $OUTPATH/$split.$pair.$lg.pth ]; then
+            if [ -f $OUTPATH/$pair.$lg.$split.pth ] && [ ! -f $OUTPATH/$split.$pair.$lg.pth ]; then
                 cp $OUTPATH/$pair.$lg.$split.pth $OUTPATH/$split.$pair.$lg.pth
             else
                 echo "file $OUTPATH/$split.$pair.$lg.pth already exists"

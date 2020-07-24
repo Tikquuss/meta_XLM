@@ -77,14 +77,15 @@ def check_model_params(params):
         assert os.path.isfile(params.reload_emb)
 
     # reload a pretrained model
-    if params.reload_model != '':
+    # our 
+    if params.reload_model != '' or params.eval_only  :
         if params.encoder_only:
             assert os.path.isfile(params.reload_model)
         else:
             s = params.reload_model.split(',')
             assert len(s) == 2
             assert all([x == '' or os.path.isfile(x) for x in s])
-
+    
 
 def set_pretrain_emb(model, dico, word2id, embeddings):
     """

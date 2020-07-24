@@ -129,7 +129,6 @@ class Trainer(object):
                 [('BT-%s-%s-%s' % (l1, l2, l3), []) for l1, l2, l3 in params.bt_steps]
             )
         else :
-            # todo : 
             self.n_sentences = {}
             
             self.stats = {}
@@ -661,7 +660,8 @@ class Trainer(object):
             else:
                 checkpoint_path = self.params.reload_checkpoint
                 assert os.path.isfile(checkpoint_path)
-        logger.warning(f"Reloading checkpoint from {checkpoint_path} ...")
+        if not self.params.eval_only or (self.params.eval_only and not self.params.reload_model):
+            logger.warning(f"Reloading checkpoint from {checkpoint_path} ...")
         data = torch.load(checkpoint_path, map_location='cpu')
 
         # reload model parameters
@@ -669,19 +669,20 @@ class Trainer(object):
             getattr(self, name).load_state_dict(data[name])
 
         # reload optimizers
-        for name in self.optimizers.keys():
-            if False:  # AMP checkpoint reloading is buggy, we cannot do that - TODO: fix - https://github.com/NVIDIA/apex/issues/250
-                logger.warning(f"Reloading checkpoint optimizer {name} ...")
-                self.optimizers[name].load_state_dict(data[f'{name}_optimizer'])
-            else:  # instead, we only reload current iterations / learning rates
-                logger.warning(f"Not reloading checkpoint optimizer {name}.")
-                for group_id, param_group in enumerate(self.optimizers[name].param_groups):
-                    if 'num_updates' not in param_group:
-                        logger.warning(f"No 'num_updates' for optimizer {name}.")
-                        continue
-                    logger.warning(f"Reloading 'num_updates' and 'lr' for optimizer {name}.")
-                    param_group['num_updates'] = data[f'{name}_optimizer']['param_groups'][group_id]['num_updates']
-                    param_group['lr'] = self.optimizers[name].get_lr_for_step(param_group['num_updates'])
+        if not self.params.eval_only or (self.params.eval_only and not self.params.reload_model):
+            for name in self.optimizers.keys():
+                if False:  # AMP checkpoint reloading is buggy, we cannot do that - TODO: fix - https://github.com/NVIDIA/apex/issues/250
+                    logger.warning(f"Reloading checkpoint optimizer {name} ...")
+                    self.optimizers[name].load_state_dict(data[f'{name}_optimizer'])
+                else:  # instead, we only reload current iterations / learning rates
+                    logger.warning(f"Not reloading checkpoint optimizer {name}.")
+                    for group_id, param_group in enumerate(self.optimizers[name].param_groups):
+                        if 'num_updates' not in param_group:
+                            logger.warning(f"No 'num_updates' for optimizer {name}.")
+                            continue
+                        logger.warning(f"Reloading 'num_updates' and 'lr' for optimizer {name}.")
+                        param_group['num_updates'] = data[f'{name}_optimizer']['param_groups'][group_id]['num_updates']
+                        param_group['lr'] = self.optimizers[name].get_lr_for_step(param_group['num_updates'])
 
         # reload main metrics
         self.epoch = data['epoch'] + 1
