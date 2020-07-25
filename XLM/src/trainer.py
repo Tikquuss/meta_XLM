@@ -664,12 +664,15 @@ class Trainer(object):
         # our
         reloading_checkpoint_condition = not self.params.eval_only or (self.params.eval_only and not self.params.reload_model)
         if reloading_checkpoint_condition :
+            logger.warning("You started the evaluation without specifying the model to be used for the evaluation, so the last checkpoint found will be loaded.")
             logger.warning(f"Reloading checkpoint from {checkpoint_path} ...")
         data = torch.load(checkpoint_path, map_location='cpu')
 
         # reload model parameters
-        for name in self.MODEL_NAMES:
-            getattr(self, name).load_state_dict(data[name])
+        # our
+        if reloading_checkpoint_condition :
+            for name in self.MODEL_NAMES:
+                getattr(self, name).load_state_dict(data[name])
 
         # reload optimizers
         # our

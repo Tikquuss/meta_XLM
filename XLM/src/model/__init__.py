@@ -77,8 +77,6 @@ def check_model_params(params):
         assert os.path.isfile(params.reload_emb)
 
     # reload a pretrained model
-    # our 
-    # if params.reload_model != '' :
     if params.reload_model != '' :
         if params.encoder_only:
             assert os.path.isfile(params.reload_model)

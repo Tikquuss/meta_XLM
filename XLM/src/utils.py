@@ -73,7 +73,9 @@ def initialize_exp(params):
     assert len(params.exp_name.strip()) > 0
 
     # create a logger
-    logger = create_logger(os.path.join(params.dump_path, 'train.log'), rank=getattr(params, 'global_rank', 0))
+    # our
+    log_file = ('eval' if params.eval_only else 'train') + '.log'
+    logger = create_logger(os.path.join(params.dump_path, log_file), rank=getattr(params, 'global_rank', 0))
     logger.info("============ Initialized logger ============")
     logger.info("\n".join("%s: %s" % (k, str(v))
                           for k, v in sorted(dict(vars(params)).items())))

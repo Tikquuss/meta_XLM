@@ -434,10 +434,8 @@ def main(params):
             while flag :
                         
                 # CLM steps
-                #print("clm_step", flag)
                 a = trainer.clm_step(lang1_dic['clm_step'] , lang2_dic['clm_step'], params.lambda_clm, data_keys_dic['clm_step'])
                     
-                #print("mlm_step", flag)
                 # MLM steps (also includes TLM if lang2 is not None) 
                 b = trainer.mlm_step(lang1_dic['mlm_step'] , lang2_dic['mlm_step'], params.lambda_mlm, data_keys_dic['mlm_step']) 
                    
