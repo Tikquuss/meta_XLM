@@ -78,7 +78,8 @@ def check_model_params(params):
 
     # reload a pretrained model
     # our 
-    if params.reload_model != '' or params.eval_only  :
+    # if params.reload_model != '' :
+    if params.reload_model != '' or params.eval_only :
         if params.encoder_only:
             assert os.path.isfile(params.reload_model)
         else:
@@ -86,7 +87,6 @@ def check_model_params(params):
             assert len(s) == 2
             assert all([x == '' or os.path.isfile(x) for x in s])
     
-
 def set_pretrain_emb(model, dico, word2id, embeddings):
     """
     Pretrain word embeddings.

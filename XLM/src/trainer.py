@@ -660,7 +660,10 @@ class Trainer(object):
             else:
                 checkpoint_path = self.params.reload_checkpoint
                 assert os.path.isfile(checkpoint_path)
-        if not self.params.eval_only or (self.params.eval_only and not self.params.reload_model):
+        
+        # our
+        reloading_checkpoint_condition = not self.params.eval_only or (self.params.eval_only and not self.params.reload_model)
+        if reloading_checkpoint_condition :
             logger.warning(f"Reloading checkpoint from {checkpoint_path} ...")
         data = torch.load(checkpoint_path, map_location='cpu')
 
@@ -669,7 +672,8 @@ class Trainer(object):
             getattr(self, name).load_state_dict(data[name])
 
         # reload optimizers
-        if not self.params.eval_only or (self.params.eval_only and not self.params.reload_model):
+        # our
+        if reloading_checkpoint_condition :
             for name in self.optimizers.keys():
                 if False:  # AMP checkpoint reloading is buggy, we cannot do that - TODO: fix - https://github.com/NVIDIA/apex/issues/250
                     logger.warning(f"Reloading checkpoint optimizer {name} ...")
@@ -689,7 +693,10 @@ class Trainer(object):
         self.n_total_iter = data['n_total_iter']
         self.best_metrics = data['best_metrics']
         self.best_stopping_criterion = data['best_stopping_criterion']
-        logger.warning(f"Checkpoint reloaded. Resuming at epoch {self.epoch} / iteration {self.n_total_iter} ...")
+        if reloading_checkpoint_condition :
+            logger.warning(f"Checkpoint reloaded. Resuming at epoch {self.epoch} / iteration {self.n_total_iter} ...")
+        else :
+            logger.warning(f"Parameters reloaded. Epoch {self.epoch} / iteration {self.n_total_iter} ...")
 
     def save_periodic(self):
         """
