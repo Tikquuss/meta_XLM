@@ -231,6 +231,7 @@ Instead of passing all the parameters of train.py, put them in a json file and s
 config_file=../configs/lm_template.json
 python train.py --config_file $config_file
 ```
+Once the training is finished you will see a file named `train.log` in the `$dump_path/$exp_name/$exp_id` folder information about the training. You will find in this same folder your checkpoints and best model.  
 When `"mlm_steps":"..."`, train.py automatically uses the languages to have `"mlm_steps":"de,en,fr,de-en,de-fe,en-fr"` (give a precise value to mlm_steps if you don't want to do all MLM and TLM, example : `"mlm_steps":"en,fr,en-fr"`). This also applies to `"clm_steps":"..."` which deviates `"clm_steps":"de,en,fr"` in this case.    
 
 Note :  
@@ -399,14 +400,15 @@ tgt_pair=
 # folder containing the data to be evaluated (must match $tgt_path in eval_data.sh)
 src_path=
 # You have to change two parameters in the configuration file used to train the LM which evaluates ("data_path":"$src_path" and "eval_only": "True")
+# You must also specify the "reload_model" parameter, otherwise the last checkpoint found will be loaded for evaluation.
 config_file=../configs/lm_template.json 
 # languages to be evaluated
 eval_lang= 
 chmod +x ../scripts/evaluate.sh
 ../scripts/evaluate.sh $eval_lang
 ```
-
-The description given below is only valid when the LM evaluator has been trained on only one language (and therefore without TLM). But let's consider the case where the basic LM has been trained on `en-fr` and we want to evaluate it on `de` or `de-ru`. `$tgt_pair` deviates from `en-fr`, but `language` varies depending on whether the evaluation is going to be done on one language or two:  
+When the evaluation is finished you will see a file named `eval.log` in the `$dump_path/$exp_name/$exp_id` folder containing the evaluation results.    
+**Note** :The description given below is only valid when the LM evaluator has been trained on only one language (and therefore without TLM). But let's consider the case where the basic LM has been trained on `en-fr` and we want to evaluate it on `de` or `de-ru`. `$tgt_pair` deviates from `en-fr`, but `language` varies depending on whether the evaluation is going to be done on one language or two:  
 - In the case of `de` : `lang=de-de`  
 - in the case of `de-ru`: `lang=de-ru`.
 
