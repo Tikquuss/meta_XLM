@@ -98,5 +98,7 @@ config_dic = {
     "remove_long_sentences_train":[bool, True],
     "remove_long_sentences_valid":[bool, False],
     "remove_long_sentences_test":[bool, False],
-    "same_data_path":[bool, True]
+    "same_data_path":[bool, True],
+    #"log_file_prefix":[str, ""],
+    #"config_file":[str, ""],
 }

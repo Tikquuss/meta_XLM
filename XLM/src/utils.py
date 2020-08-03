@@ -78,10 +78,14 @@ def initialize_exp(params):
       log_file = 'eval'
     else :
       log_file = 'train'
-    i = 1
-    while os.path.isfile(os.path.join(params.dump_path, log_file+str(i)+'.log')):
-      i += 1
-    log_file = log_file+str(i)+'.log'
+    
+    if not params.log_file_prefix :
+        i = 1
+        while os.path.isfile(os.path.join(params.dump_path, log_file+str(i)+'.log')):
+            i += 1
+        log_file = log_file+str(i)+'.log'
+    else :
+        log_file = params.log_file_prefix + "_" + log_file +'.log'
     # end_our
     
     logger = create_logger(os.path.join(params.dump_path, log_file), rank=getattr(params, 'global_rank', 0))

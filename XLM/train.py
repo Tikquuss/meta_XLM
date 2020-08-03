@@ -240,6 +240,9 @@ def get_parser():
     parser.add_argument("--config_file", type=str, default="", 
                         help="")
 
+    parser.add_argument("--log_file_prefix", type=str, default="", 
+                        help="Log file prefix. Name of the language to be evaluated in the case of the evaluation of one LM on another.")
+
     return parser
 
 

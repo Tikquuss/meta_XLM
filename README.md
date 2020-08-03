@@ -81,9 +81,9 @@ XLM supports multi-GPU and multi-node training, and contains code for:
             <td><b>13.48</b></td>
         </tr>
     </tbody>
-  </table> 
+</table> 
 
-  <table class="table table-striped">
+<table class="table table-striped">
     <thead>
         <tr>
             <th scope="col">Translation_task</th>
@@ -118,7 +118,7 @@ XLM supports multi-GPU and multi-node training, and contains code for:
             <td><b>27.84</b></td>  
         </tr>
     </tbody>
-  </table> 
+</table> 
   
 
 cluster1 = (<b>Bafi</b>a, <b>Bulu</b>, <b>Ghom</b>ala, <b>Limb</b>ium)  
@@ -357,6 +357,570 @@ At this stage, restart the training as in the previous section with :
 You can use one of the two previously trained meta-models: pre-formed meta-model (MLM, TLM) or meta-MT formed from the pre-formed meta-model. 
 
 ### 5. How to evaluate a language model trained on a language L on another language L'.
+
+###### Our
+
+<table class="table table-striped">
+    <caption><b></b></caption>
+    <thead>
+        <tr>
+            <th scope="col">
+                Trained on
+                <br/>
+                Evaluated on
+            </th>
+            <th scope="col">Bafi</th>
+            <th scope="col">Bulu</th>
+            <th scope="col">Ewon</th>
+            <th scope="col">Ghom</th>
+            <th scope="col">Limb</th>
+            <th scope="col">Ngie</th>
+            <th scope="col">Dii</th>
+            <th scope="col">Doya</th>
+            <th scope="col">Peer</th>
+            <th scope="col">Samb</th>
+            <th scope="col">Guid</th>
+            <th scope="col">Guiz</th>
+            <th scope="col">Kaps</th>
+            <th scope="col">Mofa</th>
+            <th scope="col">Mofu</th>
+            <th scope="col">Du_n</th>
+            <th scope="col">Ejag</th>
+            <th scope="col">Fulf</th>
+            <th scope="col">Gbay</th>
+            <th scope="col">MASS</th>
+            <th scope="col">Tupu</th>
+            <th scope="col">Vute</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <th scope="row">Bafi</th>
+            <td>Bafi</td>
+            <td>Bulu</td>
+            <td>Ewon</td>
+            <td>Ghom</td>
+            <td>Limb</td>
+            <td>Ngie</td>
+            <td>Dii</td>
+            <td>Doya</td>
+            <td>Peer</td>
+            <td>Samb</td>
+            <td>Guid</td>
+            <td>Guiz</td>
+            <td>Kaps</td>
+            <td>Mofa</td>
+            <td>Mofu</td>
+            <td>Du_n</td>
+            <td>Ejag</td>
+            <td>Fulf</td>
+            <td>Gbay</td>
+            <td>MASS</td>
+            <td>Tupu</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Bulu</th>
+            <td>Bafi</td>
+            <td>Bulu</td>
+            <td>Ewon</td>
+            <td>Ghom</td>
+            <td>Limb</td>
+            <td>Ngie</td>
+            <td>Dii</td>
+            <td>Doya</td>
+            <td>Peer</td>
+            <td>Samb</td>
+            <td>Guid</td>
+            <td>Guiz</td>
+            <td>Kaps</td>
+            <td>Mofa</td>
+            <td>Mofu</td>
+            <td>Du_n</td>
+            <td>Ejag</td>
+            <td>Fulf</td>
+            <td>Gbay</td>
+            <td>MASS</td>
+            <td>Tupu</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Ghom</th>
+            <td>Bafi</td>
+            <td>Bulu</td>
+            <td>Ewon</td>
+            <td>Ghom</td>
+            <td>Limb</td>
+            <td>Ngie</td>
+            <td>Dii</td>
+            <td>Doya</td>
+            <td>Peer</td>
+            <td>Samb</td>
+            <td>Guid</td>
+            <td>Guiz</td>
+            <td>Kaps</td>
+            <td>Mofa</td>
+            <td>Mofu</td>
+            <td>Du_n</td>
+            <td>Ejag</td>
+            <td>Fulf</td>
+            <td>Gbay</td>
+            <td>MASS</td>
+            <td>Tupu</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Limb</th>
+            <td>Bafi</td>
+            <td>Bulu</td>
+            <td>Ewon</td>
+            <td>Ghom</td>
+            <td>Limb</td>
+            <td>Ngie</td>
+            <td>Dii</td>
+            <td>Doya</td>
+            <td>Peer</td>
+            <td>Samb</td>
+            <td>Guid</td>
+            <td>Guiz</td>
+            <td>Kaps</td>
+            <td>Mofa</td>
+            <td>Mofu</td>
+            <td>Du_n</td>
+            <td>Ejag</td>
+            <td>Fulf</td>
+            <td>Gbay</td>
+            <td>MASS</td>
+            <td>Tupu</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Ngie</th>
+            <td>Bafi</td>
+            <td>Bulu</td>
+            <td>Ewon</td>
+            <td>Ghom</td>
+            <td>Limb</td>
+            <td>Ngie</td>
+            <td>Dii</td>
+            <td>Doya</td>
+            <td>Peer</td>
+            <td>Samb</td>
+            <td>Guid</td>
+            <td>Guiz</td>
+            <td>Kaps</td>
+            <td>Mofa</td>
+            <td>Mofu</td>
+            <td>Du_n</td>
+            <td>Ejag</td>
+            <td>Fulf</td>
+            <td>Gbay</td>
+            <td>MASS</td>
+            <td>Tupu</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Dii</th>
+            <td>Bafi</td>
+            <td>Bulu</td>
+            <td>Ewon</td>
+            <td>Ghom</td>
+            <td>Limb</td>
+            <td>Ngie</td>
+            <td>Dii</td>
+            <td>Doya</td>
+            <td>Peer</td>
+            <td>Samb</td>
+            <td>Guid</td>
+            <td>Guiz</td>
+            <td>Kaps</td>
+            <td>Mofa</td>
+            <td>Mofu</td>
+            <td>Du_n</td>
+            <td>Ejag</td>
+            <td>Fulf</td>
+            <td>Gbay</td>
+            <td>MASS</td>
+            <td>Tupu</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Doya</th>
+            <td>Bafi</td>
+            <td>Bulu</td>
+            <td>Ewon</td>
+            <td>Ghom</td>
+            <td>Limb</td>
+            <td>Ngie</td>
+            <td>Dii</td>
+            <td>Doya</td>
+            <td>Peer</td>
+            <td>Samb</td>
+            <td>Guid</td>
+            <td>Guiz</td>
+            <td>Kaps</td>
+            <td>Mofa</td>
+            <td>Mofu</td>
+            <td>Du_n</td>
+            <td>Ejag</td>
+            <td>Fulf</td>
+            <td>Gbay</td>
+            <td>MASS</td>
+            <td>Tupu</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Peer</th>
+            <td>Bafi</td>
+            <td>Bulu</td>
+            <td>Ewon</td>
+            <td>Ghom</td>
+            <td>Limb</td>
+            <td>Ngie</td>
+            <td>Dii</td>
+            <td>Doya</td>
+            <td>Peer</td>
+            <td>Samb</td>
+            <td>Guid</td>
+            <td>Guiz</td>
+            <td>Kaps</td>
+            <td>Mofa</td>
+            <td>Mofu</td>
+            <td>Du_n</td>
+            <td>Ejag</td>
+            <td>Fulf</td>
+            <td>Gbay</td>
+            <td>MASS</td>
+            <td>Tupu</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Samb</th>
+            <td>Bafi</td>
+            <td>Bulu</td>
+            <td>Ewon</td>
+            <td>Ghom</td>
+            <td>Limb</td>
+            <td>Ngie</td>
+            <td>Dii</td>
+            <td>Doya</td>
+            <td>Peer</td>
+            <td>Samb</td>
+            <td>Guid</td>
+            <td>Guiz</td>
+            <td>Kaps</td>
+            <td>Mofa</td>
+            <td>Mofu</td>
+            <td>Du_n</td>
+            <td>Ejag</td>
+            <td>Fulf</td>
+            <td>Gbay</td>
+            <td>MASS</td>
+            <td>Tupu</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Guid</th>
+            <td>Bafi</td>
+            <td>Bulu</td>
+            <td>Ewon</td>
+            <td>Ghom</td>
+            <td>Limb</td>
+            <td>Ngie</td>
+            <td>Dii</td>
+            <td>Doya</td>
+            <td>Peer</td>
+            <td>Samb</td>
+            <td>Guid</td>
+            <td>Guiz</td>
+            <td>Kaps</td>
+            <td>Mofa</td>
+            <td>Mofu</td>
+            <td>Du_n</td>
+            <td>Ejag</td>
+            <td>Fulf</td>
+            <td>Gbay</td>
+            <td>MASS</td>
+            <td>Tupu</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Guiz</th>
+            <td>Bafi</td>
+            <td>Bulu</td>
+            <td>Ewon</td>
+            <td>Ghom</td>
+            <td>Limb</td>
+            <td>Ngie</td>
+            <td>Dii</td>
+            <td>Doya</td>
+            <td>Peer</td>
+            <td>Samb</td>
+            <td>Guid</td>
+            <td>Guiz</td>
+            <td>Kaps</td>
+            <td>Mofa</td>
+            <td>Mofu</td>
+            <td>Du_n</td>
+            <td>Ejag</td>
+            <td>Fulf</td>
+            <td>Gbay</td>
+            <td>MASS</td>
+            <td>Tupu</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Kaps</th>
+            <td>Bafi</td>
+            <td>Bulu</td>
+            <td>Ewon</td>
+            <td>Ghom</td>
+            <td>Limb</td>
+            <td>Ngie</td>
+            <td>Dii</td>
+            <td>Doya</td>
+            <td>Peer</td>
+            <td>Samb</td>
+            <td>Guid</td>
+            <td>Guiz</td>
+            <td>Kaps</td>
+            <td>Mofa</td>
+            <td>Mofu</td>
+            <td>Du_n</td>
+            <td>Ejag</td>
+            <td>Fulf</td>
+            <td>Gbay</td>
+            <td>MASS</td>
+            <td>Tupu</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Mofa</th>
+            <td>Bafi</td>
+            <td>Bulu</td>
+            <td>Ewon</td>
+            <td>Ghom</td>
+            <td>Limb</td>
+            <td>Ngie</td>
+            <td>Dii</td>
+            <td>Doya</td>
+            <td>Peer</td>
+            <td>Samb</td>
+            <td>Guid</td>
+            <td>Guiz</td>
+            <td>Kaps</td>
+            <td>Mofa</td>
+            <td>Mofu</td>
+            <td>Du_n</td>
+            <td>Ejag</td>
+            <td>Fulf</td>
+            <td>Gbay</td>
+            <td>MASS</td>
+            <td>Tupu</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Mofu</th>
+            <td>Bafi</td>
+            <td>Bulu</td>
+            <td>Ewon</td>
+            <td>Ghom</td>
+            <td>Limb</td>
+            <td>Ngie</td>
+            <td>Dii</td>
+            <td>Doya</td>
+            <td>Peer</td>
+            <td>Samb</td>
+            <td>Guid</td>
+            <td>Guiz</td>
+            <td>Kaps</td>
+            <td>Mofa</td>
+            <td>Mofu</td>
+            <td>Du_n</td>
+            <td>Ejag</td>
+            <td>Fulf</td>
+            <td>Gbay</td>
+            <td>MASS</td>
+            <td>Tupu</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Du_n</th>
+            <td>Bafi</td>
+            <td>Bulu</td>
+            <td>Ewon</td>
+            <td>Ghom</td>
+            <td>Limb</td>
+            <td>Ngie</td>
+            <td>Dii</td>
+            <td>Doya</td>
+            <td>Peer</td>
+            <td>Samb</td>
+            <td>Guid</td>
+            <td>Guiz</td>
+            <td>Kaps</td>
+            <td>Mofa</td>
+            <td>Mofu</td>
+            <td>Du_n</td>
+            <td>Ejag</td>
+            <td>Fulf</td>
+            <td>Gbay</td>
+            <td>MASS</td>
+            <td>Tupu</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Ejagam</th>
+            <td>Bafi</td>
+            <td>Bulu</td>
+            <td>Ewon</td>
+            <td>Ghom</td>
+            <td>Limb</td>
+            <td>Ngie</td>
+            <td>Dii</td>
+            <td>Doya</td>
+            <td>Peer</td>
+            <td>Samb</td>
+            <td>Guid</td>
+            <td>Guiz</td>
+            <td>Kaps</td>
+            <td>Mofa</td>
+            <td>Mofu</td>
+            <td>Du_n</td>
+            <td>Ejag</td>
+            <td>Fulf</td>
+            <td>Gbay</td>
+            <td>MASS</td>
+            <td>Tupu</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Fulf</th>
+            <td>Bafi</td>
+            <td>Bulu</td>
+            <td>Ewon</td>
+            <td>Ghom</td>
+            <td>Limb</td>
+            <td>Ngie</td>
+            <td>Dii</td>
+            <td>Doya</td>
+            <td>Peer</td>
+            <td>Samb</td>
+            <td>Guid</td>
+            <td>Guiz</td>
+            <td>Kaps</td>
+            <td>Mofa</td>
+            <td>Mofu</td>
+            <td>Du_n</td>
+            <td>Ejag</td>
+            <td>Fulf</td>
+            <td>Gbay</td>
+            <td>MASS</td>
+            <td>Tupu</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Gbay</th>
+            <td>Bafi</td>
+            <td>Bulu</td>
+            <td>Ewon</td>
+            <td>Ghom</td>
+            <td>Limb</td>
+            <td>Ngie</td>
+            <td>Dii</td>
+            <td>Doya</td>
+            <td>Peer</td>
+            <td>Samb</td>
+            <td>Guid</td>
+            <td>Guiz</td>
+            <td>Kaps</td>
+            <td>Mofa</td>
+            <td>Mofu</td>
+            <td>Du_n</td>
+            <td>Ejag</td>
+            <td>Fulf</td>
+            <td>Gbay</td>
+            <td>MASS</td>
+            <td>Tupu</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">MASS</th>
+            <td>Bafi</td>
+            <td>Bulu</td>
+            <td>Ewon</td>
+            <td>Ghom</td>
+            <td>Limb</td>
+            <td>Ngie</td>
+            <td>Dii</td>
+            <td>Doya</td>
+            <td>Peer</td>
+            <td>Samb</td>
+            <td>Guid</td>
+            <td>Guiz</td>
+            <td>Kaps</td>
+            <td>Mofa</td>
+            <td>Mofu</td>
+            <td>Du_n</td>
+            <td>Ejag</td>
+            <td>Fulf</td>
+            <td>Gbay</td>
+            <td>MASS</td>
+            <td>Tupu</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Tupu</th>
+            <td>Bafi</td>
+            <td>Bulu</td>
+            <td>Ewon</td>
+            <td>Ghom</td>
+            <td>Limb</td>
+            <td>Ngie</td>
+            <td>Dii</td>
+            <td>Doya</td>
+            <td>Peer</td>
+            <td>Samb</td>
+            <td>Guid</td>
+            <td>Guiz</td>
+            <td>Kaps</td>
+            <td>Mofa</td>
+            <td>Mofu</td>
+            <td>Du_n</td>
+            <td>Ejag</td>
+            <td>Fulf</td>
+            <td>Gbay</td>
+            <td>MASS</td>
+            <td>Tupu</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Vute</th>
+            <td>Bafi</td>
+            <td>Bulu</td>
+            <td>Ewon</td>
+            <td>Ghom</td>
+            <td>Limb</td>
+            <td>Ngie</td>
+            <td>Dii</td>
+            <td>Doya</td>
+            <td>Peer</td>
+            <td>Samb</td>
+            <td>Guid</td>
+            <td>Guiz</td>
+            <td>Kaps</td>
+            <td>Mofa</td>
+            <td>Mofu</td>
+            <td>Du_n</td>
+            <td>Ejag</td>
+            <td>Fulf</td>
+            <td>Gbay</td>
+            <td>MASS</td>
+            <td>Tupu</td>
+            <td>Vute</td>
+        </tr>
+    </tbody>
+</table>
 
 ###### Prerequisite
 If you want to evaluate the LM on a language `lang`, you must first have a file named `lang.txt` in the `$src_path` directory of [eval_data.sh](eval_data.sh).  

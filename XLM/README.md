@@ -64,6 +64,12 @@ Our **XLM** PyTorch English model is trained on the same data than the pretraine
 ### Train your own monolingual BERT model
 Now it what follows, we will explain how you can train a similar model on your own data.
 
+**Note** : Most of the bash scripts used in this repository were written on the windows operating system, and can generate this error on linux platforms.  
+This problem can be corrected with the following command: 
+```
+cat my_file.sh | tr -d '\r' > my_file.sh.new && rm my_file.sh && cp my_file.sh.new my_file.sh && rm my_file.sh.new
+```
+
 ### 1. Preparing the data
 First, get the monolingual data (English Wikipedia, the [TBC corpus](https://yknzhu.wixsite.com/mbweb) is not hosted anymore).
 ```
