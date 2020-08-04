@@ -138,6 +138,12 @@ See [HowToTrainYourMAMLPytorch](https://github.com/AntreasAntoniou/HowToTrainYou
 
 ## III. Train your own (meta-)model
 
+**Note** : Most of the bash scripts used in this repository were written on the windows operating system, and can generate this [error](https://prograide.com/pregunta/5588/configure--bin--sh--m-mauvais-interpreteur) on linux platforms.  
+This problem can be corrected with the following command: 
+```
+filename=my_file.sh 
+cat $filename | tr -d '\r' > $filename.new && rm $filename && mv $filename.new $filename 
+```
 ### 1. Preparing the data 
 
 At this level, if you have pre-processed binary data in pth format (for example from XLM experimentation or improvised by yourself), group them in a specific folder that you will mention as a parameter by calling the script [train.py](XLM/train.py).  
@@ -361,13 +367,14 @@ You can use one of the two previously trained meta-models: pre-formed meta-model
 ###### Our
 
 <table class="table table-striped">
-    <caption><b></b></caption>
+    <caption><b>?</b></caption>
     <thead>
         <tr>
             <th scope="col">
-                Trained on
+                Evaluated on (rows)
+                ---------
                 <br/>
-                Evaluated on
+                Trained on (cols)
             </th>
             <th scope="col">Bafi</th>
             <th scope="col">Bulu</th>
@@ -397,76 +404,51 @@ You can use one of the two previously trained meta-models: pre-formed meta-model
         <tr>
             <th scope="row">Bafi</th>
             <td>Bafi</td>
-            <td>Bulu</td>
-            <td>Ewon</td>
-            <td>Ghom</td>
-            <td>Limb</td>
-            <td>Ngie</td>
-            <td>Dii</td>
-            <td>Doya</td>
-            <td>Peer</td>
-            <td>Samb</td>
-            <td>Guid</td>
-            <td>Guiz</td>
-            <td>Kaps</td>
-            <td>Mofa</td>
-            <td>Mofu</td>
-            <td>Du_n</td>
-            <td>Ejag</td>
-            <td>Fulf</td>
-            <td>Gbay</td>
-            <td>MASS</td>
-            <td>Tupu</td>
+            <td>9641.862413/4.145078</td>
+            <td>7023.006102/11.139896</td>
+            <td>8488.757076/5.699482</td>
+            <td>4836.354041/7.772021</td>
+            <td>5154.110724/8.031088</td>
+            <td>5205.630687/10.103627</td>
+            <td>7735.052416/10.362694</td>
+            <td>4938.250528/11.917098</td>
+            <td>5952.549715/12.176166</td>
+            <td>8069.986058/7.253886</td>
+            <td>9331.144292/4.663212</td>
+            <td>20763.651520/3.108808</td>
+            <td><b><a>3968.884445/14.766839</a></b></td>
+            <td>10056.528945/7.772021</td>
+            <td>5691.886751/11.658031</td>
+            <td>6354.060010/4.663212</td>
+            <td>9525.391103/7.253886</td>
+            <td>6127.726849/9.844560</td>
+            <td>9046.982496/9.844560</td>
+            <td>11365.703558/2.590674</td>
             <td>Vute</td>
         </tr>
         <tr>
             <th scope="row">Bulu</th>
-            <td>Bafi</td>
+            <td>84.652506/41.191710</td>
             <td>Bulu</td>
-            <td>Ewon</td>
-            <td>Ghom</td>
-            <td>Limb</td>
-            <td>Ngie</td>
-            <td>Dii</td>
-            <td>Doya</td>
-            <td>Peer</td>
-            <td>Samb</td>
-            <td>Guid</td>
-            <td>Guiz</td>
-            <td>Kaps</td>
-            <td>Mofa</td>
-            <td>Mofu</td>
-            <td>Du_n</td>
-            <td>Ejag</td>
-            <td>Fulf</td>
-            <td>Gbay</td>
-            <td>MASS</td>
-            <td>Tupu</td>
-            <td>Vute</td>
-        </tr>
-        <tr>
-            <th scope="row">Ghom</th>
-            <td>Bafi</td>
-            <td>Bulu</td>
-            <td>Ewon</td>
-            <td>Ghom</td>
-            <td>Limb</td>
-            <td>Ngie</td>
-            <td>Dii</td>
-            <td>Doya</td>
-            <td>Peer</td>
-            <td>Samb</td>
-            <td>Guid</td>
-            <td>Guiz</td>
-            <td>Kaps</td>
-            <td>Mofa</td>
-            <td>Mofu</td>
-            <td>Du_n</td>
-            <td>Ejag</td>
-            <td>Fulf</td>
-            <td>Gbay</td>
-            <td>MASS</td>
-            <td>Tupu</td>
+            <td>740.771977/20.466321</td>
+            <td><b><a>31.783430/59.067358</a></b></td>
+            <td>1293.129827/13.471503</td>
+            <td>115.662209/44.559585</td>
+            <td>438.829552/22.020725</td>
+            <td>59.983813/50.000000</td>
+            <td>197.510486/31.606218</td>
+            <td>139.914763/40.414508</td>
+            <td>226.804356/32.642487</td>
+            <td>334.615706/20.984456</td>
+            <td>145.375169/36.787565</td>
+            <td>528.222062/15.803109</td>
+            <td>210.279107/28.756477</td>
+            <td>247.222512/23.316062</td>
+            <td>357.467149/26.424870</td>
+            <td>290.799215/28.497409</td>
+            <td>43.813012/54.145078</td>
+            <td>267.563669/26.683938</td>
+            <td>1362.146143/14.248705</td>
             <td>Vute</td>
         </tr>
         <tr>
@@ -495,153 +477,228 @@ You can use one of the two previously trained meta-models: pre-formed meta-model
             <td>Vute</td>
         </tr>
         <tr>
-            <th scope="row">Ngie</th>
-            <td>Bafi</td>
-            <td>Bulu</td>
+            <th scope="row">Ewon</th>
+            <td>2151.431353/10.880829</td>
+            <td><b><a>815.198358/12.435233</a></b></td>
             <td>Ewon</td>
+            <td>6019.234940/3.886010</td>
+            <td>1880.201237/2.331606</td>
+            <td>3538.267341/7.512953</td>
+            <td>2470.050441/6.735751</td>
+            <td>1818.302513/11.917098</td>
+            <td>2884.453057/11.139896</td>
+            <td>4142.411503/3.626943</td>
+            <td>2339.331947/13.212435</td>
+            <td><b>1412.523008/13.212435</b></td>
+            <td>2012.112662/11.917098</td>
+            <td>1352.342604/6.994819</td>
+            <td>2355.256775/3.626943</td>
+            <td>1881.124257/4.404145</td>
+            <td>1752.942742/8.031088</td>
+            <td>3659.392301/2.849741</td>
+            <td>3171.832886/8.808290</td>
+            <td>3892.788686/6.994819</td>
+            <td>2902.837358/6.735751</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Ghom</th>
+            <td>12534.580387/4.663212</td>
+            <td>6429.403387/9.585492</td>
+            <td>12487.609719/3.886010</td>
             <td>Ghom</td>
+            <td>12082.108668/2.590674</td>
+            <td>10541.723001/9.067358</td>
+            <td>10419.898378/10.362694</td>
+            <td>8534.138193/10.880829</td>
+            <td><b><a>4799.715045/13.471503</a></b></td>
+            <td>7910.274852/8.808290</td>
+            <td>14444.680356/3.886010</td>
+            <td>6077.696992/11.398964</td>
+            <td>9839.076908/8.031088</td>
+            <td>17795.257890/1.813472</td>
+            <td>5283.339702/11.398964</td>
+            <td>12322.690724/2.849741</td>
+            <td>9074.204567/8.290155</td>
+            <td>11795.495703/6.476684</td>
+            <td>11404.250560/3.626943</td>
+            <td>6052.526703/9.844560</td>
+            <td>6091.630087/11.398964</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Limb</th>
+            <td>2548.509833/9.326425</td>
+            <td>5867.537444/11.139896</td>
+            <td>7638.680131/2.590674</td>
+            <td><b><a>989.009397/10.880829</a></b></td>
             <td>Limb</td>
+            <td>3907.341382/7.253886</td>
+            <td>5057.720608/7.253886</td>
+            <td>1860.932751/11.658031</td>
+            <td>1860.932751/11.658031</td>
+            <td>1629.312303/14.507772</td>
+            <td>2068.833365/11.398964</td>
+            <td>2472.515809/6.217617</td>
+            <td>6228.619987/3.886010</td>
+            <td>2898.169247/12.435233</td>
+            <td><b>2507.417041/14.766839</b></td>
+            <td>9058.923217/3.626943</td>
+            <td>17742.041318/1.813472</td>
+            <td>7047.464678/8.290155</td>
+            <td>2401.919112/9.067358</td>
+            <td>5616.579787/9.326425</td>
+            <td>8866.336289/10.880829</td>
+            <td>Vute</td>
+        </tr>
+        <tr>
+            <th scope="row">Ngie</th>
+            <td>3839.537600/8.808290</td>
+            <td>2258.625684/3.367876</td>
+            <td>859.593223/7.772021</td>
+            <td>5236.167128/6.476684</td>
+            <td><b><a>642.637135/14.248705</a></b></td>
             <td>Ngie</td>
-            <td>Dii</td>
-            <td>Doya</td>
-            <td>Peer</td>
-            <td>Samb</td>
-            <td>Guid</td>
-            <td>Guiz</td>
-            <td>Kaps</td>
-            <td>Mofa</td>
-            <td>Mofu</td>
-            <td>Du_n</td>
-            <td>Ejag</td>
-            <td>Fulf</td>
-            <td>Gbay</td>
-            <td>MASS</td>
-            <td>Tupu</td>
+            <td>2179.338089/11.398964</td>
+            <td>5322.743968/2.072539</td>
+            <td>1306.552793/12.694301</td>
+            <td>1923.131712/8.549223</td>
+            <td>1033.530817/12.435233</td>
+            <td>1309.807990/5.440415</td>
+            <td>3468.478875/8.290155</td>
+            <td>1099.209170/8.549223</td>
+            <td>1308.837793/12.694301</td>
+            <td>1619.173043/4.404145</td>
+            <td>1536.168234/6.735751</td>
+            <td>1243.568903/11.398964</td>
+            <td>2721.658908/13.471503</td>
+            <td>2657.650201/4.404145</td>
+            <td>1108.130685/11.139896</td>
             <td>Vute</td>
         </tr>
         <tr>
             <th scope="row">Dii</th>
-            <td>Bafi</td>
-            <td>Bulu</td>
-            <td>Ewon</td>
-            <td>Ghom</td>
-            <td>Limb</td>
-            <td>Ngie</td>
+            <td>1798.463676/12.176166</td>
+            <td>3304.220186/12.694301</td>
+            <td>3728.976216/9.067358</td>
+            <td>1934.611307/5.699482</td>
+            <td>2684.056032/12.953368</td>
+            <td><b><a>966.387152/9.326425</a></b></td>
             <td>Dii</td>
-            <td>Doya</td>
-            <td>Peer</td>
-            <td>Samb</td>
-            <td>Guid</td>
-            <td>Guiz</td>
-            <td>Kaps</td>
-            <td>Mofa</td>
-            <td>Mofu</td>
-            <td>Du_n</td>
-            <td>Ejag</td>
-            <td>Fulf</td>
-            <td>Gbay</td>
-            <td>MASS</td>
-            <td>Tupu</td>
+            <td>2032.415258/12.435233</td>
+            <td>1702.768217/8.808290</td>
+            <td>4667.123531/4.663212</td>
+            <td><b>1301.429756/15.803109</b></td>
+            <td>1817.271287/10.621762</td>
+            <td>1413.182329/9.067358</td>
+            <td>2200.981269/9.067358</td>
+            <td>2269.613026/6.994819</td>
+            <td>2239.031973/13.212435</td>
+            <td>3984.938295/6.735751</td>
+            <td>3728.976216/9.067358</td>
+            <td>2492.211612/9.585492</td>
+            <td>1832.114609/9.067358</td>
+            <td>2665.039369/10.103627</td>
             <td>Vute</td>
         </tr>
         <tr>
             <th scope="row">Doya</th>
-            <td>Bafi</td>
-            <td>Bulu</td>
-            <td>Ewon</td>
-            <td>Ghom</td>
-            <td>Limb</td>
-            <td>Ngie</td>
-            <td>Dii</td>
+            <td>4893.198105/9.326425</td>
+            <td>6287.481749/2.331606</td>
+            <td>5808.410418/3.626943</td>
+            <td>14406.605889/4.663212</td>
+            <td>8473.045394/7.253886</td>
+            <td>8920.099595/7.772021</td>
+            <td>8191.981461/3.367876</td>
             <td>Doya</td>
-            <td>Peer</td>
-            <td>Samb</td>
-            <td>Guid</td>
-            <td>Guiz</td>
-            <td>Kaps</td>
-            <td>Mofa</td>
-            <td>Mofu</td>
-            <td>Du_n</td>
-            <td>Ejag</td>
-            <td>Fulf</td>
-            <td>Gbay</td>
-            <td>MASS</td>
-            <td>Tupu</td>
+            <td>4287.027967/13.471503</td>
+            <td>5953.688449/11.658031</td>
+            <td>14767.571446/3.108808</td>
+            <td><b><a>3530.551890/13.730570</a></b></td>
+            <td>10256.501949/7.512953</td>
+            <td>3768.545361/10.880829</td>
+            <td>11737.798567/4.922280</td>
+            <td>14521.561276/1.813472</td>
+            <td>6578.692985/7.772021</td>
+            <td>9329.793306/7.772021</td>
+            <td>3598.611434/12.694301</td>
+            <td>6902.982200/12.176166</td>
+            <td>10987.224415/5.958549</td>
             <td>Vute</td>
         </tr>
         <tr>
             <th scope="row">Peer</th>
-            <td>Bafi</td>
-            <td>Bulu</td>
-            <td>Ewon</td>
-            <td>Ghom</td>
-            <td>Limb</td>
-            <td>Ngie</td>
-            <td>Dii</td>
-            <td>Doya</td>
+            <td>8908.379667/3.886010</td>
+            <td>8652.128379/13.471503</td>
+            <td>18627.804053/3.886010</td>
+            <td>14583.766532/10.621762</td>
+            <td>15608.195381/4.145078</td>
+            <td>19464.813588/10.880829</td>
+            <td><b><a>5231.032656/13.989637</a></b></td>
+            <td>26042.041333/3.367876</td>
             <td>Peer</td>
-            <td>Samb</td>
-            <td>Guid</td>
-            <td>Guiz</td>
-            <td>Kaps</td>
-            <td>Mofa</td>
-            <td>Mofu</td>
-            <td>Du_n</td>
-            <td>Ejag</td>
-            <td>Fulf</td>
-            <td>Gbay</td>
-            <td>MASS</td>
-            <td>Tupu</td>
+            <td>11118.108068/4.922280</td>
+            <td>18749.089653/4.922280</td>
+            <td>6573.450465/11.917098</td>
+            <td>14867.235979/9.585492</td>
+            <td>10041.800720/6.476684</td>
+            <td>14068.778453/4.663212</td>
+            <td>17058.696000/1.813472</td>
+            <td>8266.294649/10.362694</td>
+            <td>7088.080623/13.730570</td>
+            <td>14291.709022/3.886010</td>
+            <td>10949.034999/12.176166</td>
+            <td>14013.710629/7.253886</td>
             <td>Vute</td>
         </tr>
         <tr>
             <th scope="row">Samb</th>
-            <td>Bafi</td>
-            <td>Bulu</td>
-            <td>Ewon</td>
-            <td>Ghom</td>
-            <td>Limb</td>
-            <td>Ngie</td>
-            <td>Dii</td>
-            <td>Doya</td>
-            <td>Peer</td>
+            <td>3288.687068/8.031088</td>
+            <td>3404.860159/5.181347</td>
+            <td><b>2231.246405/12.694301</b></td>
+            <td>3077.913123/3.108808</td>
+            <td>1694.117930/8.290155</td>
+            <td><b><a>1449.211630/2.590674</a></b></td>
+            <td>2040.977014/12.176166</td>
+            <td>5026.008327/7.253886</td>
+            <td>5620.717959/4.922280</td>
             <td>Samb</td>
-            <td>Guid</td>
-            <td>Guiz</td>
-            <td>Kaps</td>
-            <td>Mofa</td>
-            <td>Mofu</td>
-            <td>Du_n</td>
-            <td>Ejag</td>
-            <td>Fulf</td>
-            <td>Gbay</td>
-            <td>MASS</td>
-            <td>Tupu</td>
+            <td>2153.477184/12.176166</td>
+            <td>2789.618463/11.658031</td>
+            <td>2549.402110/10.621762</td>
+            <td>7872.150457/2.590674</td>
+            <td>3013.175369/8.808290</td>
+            <td>5150.489427/1.813472</td>
+            <td>2939.279236/7.772021</td>
+            <td>3544.917114/4.663212</td>
+            <td>2673.759202/12.694301</td>
+            <td>1761.157273/6.217617</td>
+            <td>2584.268630/3.626943</td>
             <td>Vute</td>
         </tr>
         <tr>
             <th scope="row">Guid</th>
-            <td>Bafi</td>
-            <td>Bulu</td>
-            <td>Ewon</td>
-            <td>Ghom</td>
-            <td>Limb</td>
-            <td>Ngie</td>
-            <td>Dii</td>
-            <td>Doya</td>
-            <td>Peer</td>
-            <td>Samb</td>
+            <td>2059.881574/9.585492</td>
+            <td>1904.170288/5.699482</td>
+            <td>1233.402875/10.103627</td>
+            <td><b>1428.437730/12.953368</b></td>
+            <td>1322.252839/7.512953</td>
+            <td>4067.960150/3.367876</td>
+            <td>1285.030370/10.880829</td>
+            <td>2256.136999/9.844560</td>
+            <td>2378.502999/5.181347</td>
+            <td>2839.932332/3.886010</td>
             <td>Guid</td>
-            <td>Guiz</td>
-            <td>Kaps</td>
-            <td>Mofa</td>
-            <td>Mofu</td>
-            <td>Du_n</td>
-            <td>Ejag</td>
-            <td>Fulf</td>
-            <td>Gbay</td>
-            <td>MASS</td>
-            <td>Tupu</td>
+            <td>2133.120878/5.699482</td>
+            <td>2545.912923/2.590674</td>
+            <td>1946.243250/3.108808</td>
+            <td>1141.774751/8.549223</td>
+            <td>1716.771722/3.367876</td>
+            <td><b><a>1239.418475/10.103627</a></b></td>
+            <td>1371.487257/8.290155</td>
+            <td>2892.676739/7.512953</td>
+            <td>2319.529896/1.813472</td>
+            <td>1851.926954/7.772021</td>
             <td>Vute</td>
         </tr>
         <tr>
@@ -671,106 +728,106 @@ You can use one of the two previously trained meta-models: pre-formed meta-model
         </tr>
         <tr>
             <th scope="row">Kaps</th>
-            <td>Bafi</td>
-            <td>Bulu</td>
-            <td>Ewon</td>
-            <td>Ghom</td>
-            <td>Limb</td>
-            <td>Ngie</td>
-            <td>Dii</td>
-            <td>Doya</td>
-            <td>Peer</td>
-            <td>Samb</td>
-            <td>Guid</td>
-            <td>Guiz</td>
+            <td>975.002457/17.616580</td>
+            <td>663.386340/20.725389</td>
+            <td>245.019906/26.683938</td>
+            <td>178.001163/25.647668</td>
+            <td>304.888440/22.020725</td>
+            <td><b><a>66.103359/27.720207</a></b></td>
+            <td>267.606732/19.689119</td>
+            <td>163.299261/21.243523</td>
+            <td>501.440619/18.393782</td>
+            <td>433.267198/15.544041</td>
+            <td>426.763084/22.279793</td>
+            <td>576.537985/14.507772</td>
             <td>Kaps</td>
-            <td>Mofa</td>
-            <td>Mofu</td>
-            <td>Du_n</td>
-            <td>Ejag</td>
-            <td>Fulf</td>
-            <td>Gbay</td>
-            <td>MASS</td>
-            <td>Tupu</td>
+            <td>585.658114/11.398964</td>
+            <td>1104.268613/14.507772</td>
+            <td>436.725091/19.430052</td>
+            <td>391.324696/19.170984</td>
+            <td>271.268658/20.466321</td>
+            <td>370.848999/16.062176</td>
+            <td>241.029656/23.316062</td>
+            <td>522.839959/18.911917</td>
             <td>Vute</td>
         </tr>
         <tr>
             <th scope="row">Mofa</th>
-            <td>Bafi</td>
-            <td>Bulu</td>
-            <td>Ewon</td>
-            <td>Ghom</td>
-            <td>Limb</td>
-            <td>Ngie</td>
-            <td>Dii</td>
-            <td>Doya</td>
-            <td>Peer</td>
-            <td>Samb</td>
-            <td>Guid</td>
-            <td>Guiz</td>
-            <td>Kaps</td>
+            <td>2226.573039/10.103627</td>
+            <td><b>1821.428880/14.507772</b></td>
+            <td>3587.808220/9.326425</td>
+            <td>6150.006570/2.331606</td>
+            <td>3669.169564/10.880829</td>
+            <td>3304.108362/10.103627</td>
+            <td>2714.833319/9.844560</td>
+            <td>3929.381608/7.512953</td>
+            <td>3179.650349/10.621762</td>
+            <td>2533.267453/14.507772</td>
+            <td>3952.469441/9.585492</td>
+            <td>3527.106587/8.808290</td>
+            <td>3345.078245/13.989637</td>
             <td>Mofa</td>
-            <td>Mofu</td>
-            <td>Du_n</td>
-            <td>Ejag</td>
-            <td>Fulf</td>
-            <td>Gbay</td>
-            <td>MASS</td>
-            <td>Tupu</td>
+            <td>1925.508108/13.471503</td>
+            <td><b><a>1178.287530/14.248705</a></b></td>
+            <td>3936.148142/4.145078</td>
+            <td>4849.457280/7.253886</td>
+            <td>3292.250224/11.658031</td>
+            <td>5178.524435/3.626943</td>
+            <td>4471.619338/13.730570</td>
             <td>Vute</td>
         </tr>
         <tr>
             <th scope="row">Mofu</th>
-            <td>Bafi</td>
-            <td>Bulu</td>
-            <td>Ewon</td>
-            <td>Ghom</td>
-            <td>Limb</td>
-            <td>Ngie</td>
-            <td>Dii</td>
-            <td>Doya</td>
-            <td>Peer</td>
-            <td>Samb</td>
-            <td>Guid</td>
-            <td>Guiz</td>
-            <td>Kaps</td>
-            <td>Mofa</td>
+            <td>1221.517231/10.880829</td>
+            <td>1509.403349/4.663212</td>
+            <td><b><a>965.299050/11.398964</a></b></td>
+            <td>2801.230161/3.886010</td>
+            <td>1288.682714/4.663212</td>
+            <td>1116.432968/11.139896</td>
+            <td>1839.516041/6.994819</td>
+            <td>1410.705031/10.103627</td>
+            <td>1903.188068/10.880829</td>
+            <td>2410.419127/3.886010</td>
+            <td><b>1072.867240/11.917098</b></td>
+            <td>1476.753929/9.067358</td>
+            <td>2450.620591/3.626943</td>
+            <td>1622.950336/5.181347</td>
             <td>Mofu</td>
-            <td>Du_n</td>
-            <td>Ejag</td>
-            <td>Fulf</td>
-            <td>Gbay</td>
-            <td>MASS</td>
-            <td>Tupu</td>
+            <td>1755.236333/5.440415</td>
+            <td>1671.335252/5.181347</td>
+            <td>1643.431276/4.404145</td>
+            <td>2992.068854/4.145078</td>
+            <td>2458.152754/5.440415</td>
+            <td>2143.866379/6.476684</td>
             <td>Vute</td>
         </tr>
         <tr>
             <th scope="row">Du_n</th>
-            <td>Bafi</td>
-            <td>Bulu</td>
-            <td>Ewon</td>
-            <td>Ghom</td>
-            <td>Limb</td>
-            <td>Ngie</td>
-            <td>Dii</td>
-            <td>Doya</td>
-            <td>Peer</td>
-            <td>Samb</td>
-            <td>Guid</td>
-            <td>Guiz</td>
-            <td>Kaps</td>
-            <td>Mofa</td>
-            <td>Mofu</td>
+            <td>1073.511749/13.212435</td>
+            <td><b><a>951.447834/15.025907</a></b></td>
+            <td>1726.115685/3.626943</td>
+            <td>1535.436216/4.145078</td>
+            <td>1119.924980/15.025907</td>
+            <td>1370.296138/4.145078</td>
+            <td>1138.137047/13.212435</td>
+            <td>1824.375396/3.367876</td>
+            <td>762.246813/15.544041</td>
+            <td>1530.009027/6.476684</td>
+            <td>740.315680/11.658031</td>
+            <td>1280.492597/8.031088</td>
+            <td>1126.285824/10.621762</td>
+            <td>1015.113656/9.326425</td>
+            <td>1163.049297/9.326425</td>
             <td>Du_n</td>
-            <td>Ejag</td>
-            <td>Fulf</td>
-            <td>Gbay</td>
-            <td>MASS</td>
-            <td>Tupu</td>
+            <td>1042.802693/10.621762</td>
+            <td>1110.908299/10.621762</td>
+            <td>2061.871193/5.699482</td>
+            <td>1678.421095/12.176166</td>
+            <td>1755.093784/11.398964</td>
             <td>Vute</td>
         </tr>
         <tr>
-            <th scope="row">Ejagam</th>
+            <th scope="row">Ejag</th>
             <td>Bafi</td>
             <td>Bulu</td>
             <td>Ewon</td>
@@ -796,77 +853,77 @@ You can use one of the two previously trained meta-models: pre-formed meta-model
         </tr>
         <tr>
             <th scope="row">Fulf</th>
-            <td>Bafi</td>
-            <td>Bulu</td>
-            <td>Ewon</td>
-            <td>Ghom</td>
-            <td>Limb</td>
-            <td>Ngie</td>
-            <td>Dii</td>
-            <td>Doya</td>
-            <td>Peer</td>
-            <td>Samb</td>
-            <td>Guid</td>
-            <td>Guiz</td>
-            <td>Kaps</td>
-            <td>Mofa</td>
-            <td>Mofu</td>
-            <td>Du_n</td>
-            <td>Ejag</td>
+            <td>1184.516199/15.284974</td>
+            <td>3135.833243/8.808290</td>
+            <td>1748.882729/12.435233</td>
+            <td><b><a>621.999487/15.803109</a></b></td>
+            <td>2669.555407/10.880829</td>
+            <td>1602.806312/15.803109</td>
+            <td>1970.925740/9.585492</td>
+            <td>1316.602911/8.290155</td>
+            <td>1299.410165/13.989637</td>
+            <td><b>1100.305846/17.875648</b></td>
+            <td>635.394683/16.321244</td>
+            <td>1438.762810/16.062176</td>
+            <td>2170.088997/8.290155</td>
+            <td>2458.666192/6.735751</td>
+            <td>1706.137234/11.398964</td>
+            <td>2166.289389/10.621762</td>
+            <td>1396.348987/11.658031</td>
             <td>Fulf</td>
-            <td>Gbay</td>
-            <td>MASS</td>
-            <td>Tupu</td>
+            <td>1423.229257/10.103627</td>
+            <td>1672.188024/14.507772</td>
+            <td>3135.833243/8.808290</td>
             <td>Vute</td>
         </tr>
         <tr>
             <th scope="row">Gbay</th>
-            <td>Bafi</td>
-            <td>Bulu</td>
-            <td>Ewon</td>
-            <td>Ghom</td>
-            <td>Limb</td>
-            <td>Ngie</td>
-            <td>Dii</td>
-            <td>Doya</td>
-            <td>Peer</td>
-            <td>Samb</td>
-            <td>Guid</td>
-            <td>Guiz</td>
-            <td>Kaps</td>
-            <td>Mofa</td>
-            <td>Mofu</td>
-            <td>Du_n</td>
-            <td>Ejag</td>
-            <td>Fulf</td>
+            <td>219.140187/24.093264</td>
+            <td>76.661343/29.792746</td>
+            <td>114.322577/23.834197</td>
+            <td>65.259857/24.870466</td>
+            <td>160.053651/20.207254</td>
+            <td><b><a>55.893237/19.430052</a></b></td>
+            <td>206.477036/25.906736</td>
+            <td>239.890494/20.466321</td>
+            <td>129.491231/25.906736</td>
+            <td>123.956888/30.569948</td>
+            <td>77.795740/25.647668</td>
+            <td>87.055673/30.829016</td>
+            <td>123.998762/23.056995</td>
+            <td>120.414121/25.647668</td>
+            <td>104.907581/22.279793</td>
+            <td><b>111.137699/31.347150</b></td>
+            <td>88.120721/28.238342</td>
+            <td>65.294247/26.943005</td>
             <td>Gbay</td>
-            <td>MASS</td>
-            <td>Tupu</td>
+            <td>128.657263/26.683938</td>
+            <td>128.707253/24.870466</td>
             <td>Vute</td>
         </tr>
         <tr>
             <th scope="row">MASS</th>
-            <td>Bafi</td>
-            <td>Bulu</td>
-            <td>Ewon</td>
-            <td>Ghom</td>
-            <td>Limb</td>
-            <td>Ngie</td>
-            <td>Dii</td>
-            <td>Doya</td>
-            <td>Peer</td>
-            <td>Samb</td>
-            <td>Guid</td>
-            <td>Guiz</td>
-            <td>Kaps</td>
-            <td>Mofa</td>
-            <td>Mofu</td>
-            <td>Du_n</td>
-            <td>Ejag</td>
-            <td>Fulf</td>
-            <td>Gbay</td>
+            <td>2045.037056/11.398964</td>
+            <td>4253.856094/9.326425</td>
+            <td>2305.952094/11.398964</td>
+            <td>563.963153/12.176166</td>
+            <td>4880.308875/7.772021</td>
+            <td>1607.562430/10.103627</td>
+            <td>1762.240252/14.248705</td>
+            <td>1404.948804/10.103627</td>
+            <td>1597.505921/12.176166</td>
+            <td><b>887.680799/15.803109</b></td>
+            <td>1002.664319/12.176166</td>
+            <td>1626.456117/14.766839</td>
+            <td>1261.074608/13.212435</td>
+            <td><b><a>13.212435/14.766839</a></b></td>
+            <td>971.691727/13.730570</td>
+            <td>2374.276617/13.471503</td>
+            <td>3496.535632/6.476684</td>
+            <td>2922.379583/5.699482</td>
+            <td>1052.875047/11.398964</td>
             <td>MASS</td>
-            <td>Tupu</td>
+            <td>7345.553956/4.404145</td>
             <td>Vute</td>
         </tr>
         <tr>
@@ -896,27 +953,27 @@ You can use one of the two previously trained meta-models: pre-formed meta-model
         </tr>
         <tr>
             <th scope="row">Vute</th>
-            <td>Bafi</td>
-            <td>Bulu</td>
-            <td>Ewon</td>
-            <td>Ghom</td>
-            <td>Limb</td>
-            <td>Ngie</td>
-            <td>Dii</td>
-            <td>Doya</td>
-            <td>Peer</td>
-            <td>Samb</td>
-            <td>Guid</td>
-            <td>Guiz</td>
-            <td>Kaps</td>
-            <td>Mofa</td>
-            <td>Mofu</td>
-            <td>Du_n</td>
-            <td>Ejag</td>
-            <td>Fulf</td>
-            <td>Gbay</td>
-            <td>MASS</td>
-            <td>Tupu</td>
+            <td>6645.796535/11.139896</a></td>
+            <td>4925.596401/8.290155</td>
+            <td>3741.521260/6.476684</td>
+            <td>5361.760334/11.658031</td>
+            <td>2579.121479/12.435233</td>
+            <td>7014.681338/3.367876</td>
+            <td>5295.572362/6.476684</td>
+            <td>7638.941172/4.145078</td>
+            <td>6666.381806/6.476684</td>
+            <td>7053.783303/9.067358</td>
+            <td>4638.151371/7.772021</td>
+            <td><b><a>2443.262661/10.362694</a></b></td>
+            <td>6183.810066/11.917098</td>
+            <td>7720.488779/2.072539</td>
+            <td>5085.297020/12.176166</td>
+            <td>3228.098115/11.658031</td>
+            <td><b>3278.564381/12.694301</b></td>
+            <td>6983.135604/4.145078</td>
+            <td>5252.519258/10.362694</td>
+            <td>4835.933224/10.621762</td>
+            <td>5773.691223/9.067358</td>
             <td>Vute</td>
         </tr>
     </tbody>
