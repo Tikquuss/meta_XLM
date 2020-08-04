@@ -371,10 +371,10 @@ You can use one of the two previously trained meta-models: pre-formed meta-model
     <thead>
         <tr>
             <th scope="col">
-                Evaluated on (rows)
+                Evaluated on (cols)
                 ---------
                 <br/>
-                Trained on (cols)
+                Trained on (rows)
             </th>
             <th scope="col">Bafi</th>
             <th scope="col">Bulu</th>
