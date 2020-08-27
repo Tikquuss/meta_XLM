@@ -4,7 +4,7 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 #
-
+import torch
 import json
 import random
 import argparse 
@@ -572,6 +572,10 @@ def check_meta_learning_params(params) :
         assert not all([objectif == [] for objectif in [clm, mlm, pc, mt, ae, bt]]), "Every task must be present in some of objectif" 
                                     
 if __name__ == '__main__':
+
+    torch.manual_seed(0)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
     # generate parser / parse parameters
     parser = get_parser()
