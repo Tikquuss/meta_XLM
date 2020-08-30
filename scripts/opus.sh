@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Usage : ./opuss.sh $lang_pair
+# Usage : ./opus.sh $lang_pair
+#           lang_pair in es-fr, de-en, fr-ru, en-ru, de-fr, es-it...
 
 # All conditions are there to allow the script to resume or it stopped in case of a sudden stop.
 
@@ -8,10 +9,8 @@ set -e
 
 pair=$1  # input language pair
 
-# Move to the `XLM` folder in advance. 
-
 # folder (container/in which to store) the data 
-PARA_PATH=data/for_the_hypothesis/para
+PARA_PATH=/content/data/para
 mkdir -p $PARA_PATH
 
 # opus data source (MultiUN or OpenSubtitles2018 or MultiUN,OpenSubtitles2018) : customize as needed

@@ -138,6 +138,8 @@ See [HowToTrainYourMAMLPytorch](https://github.com/AntreasAntoniou/HowToTrainYou
 
 ## III. Train your own (meta-)model
 
+**Open the illustrative notebook in colab**[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1qiKcDNeK5CuyhmMUdR_hAZ5tbtW2Y7jM#scrollTo=GX04_8ACyIg-)
+
 **Note** : Most of the bash scripts used in this repository were written on the windows operating system, and can generate this [error](https://prograide.com/pregunta/5588/configure--bin--sh--m-mauvais-interpreteur) on linux platforms.  
 This problem can be corrected with the following command: 
 ```
@@ -161,16 +163,21 @@ Parallel and monolingual data can all be in the same folder.
 
 **Note** : Languages must be submitted in alphabetical order (`de-en and not en-de, fr-ru and not ru-fr...`). If you submit them in any order you will have problems loading data during training, because when you run the [train.py](XLM/train.py) script the parameters like the language pair are put back in alphabetical order before being processed. Don't worry about this alphabetical order restriction, XLM for MT is naturally trained to translate sentences in both directions. See [translate.py](scripts/translate.py).
 
-[OPUS collections](http://opus.nlpl.eu/) is a good source of dataset. We illustrate in the [opus.sh](scripts/opus.sh) script how to download the data from opus and convert it to a text file. 
+[OPUS collections](http://opus.nlpl.eu/) is a good source of dataset. We illustrate in the [opus.sh](scripts/opus.sh) script how to download the data from opus and convert it to a text file.  
+Changing parameters ($PARA_PATH and $SRC) in [opus.sh](scripts/opus.sh).
+```
+chmod +x ./scripts/opus.sh
+./scripts/opus.sh de-fr
+```
 
 Another source for `other_languages-english` data is [anki Tab-delimited Bilingual Sentence Pairs](http://www.manythings.org/anki/). Simply download the .zip file, unzip to extract the `other_language.txt` file. This file usually contains data in the form of `sentence_en sentence_other_language other_information` on each line. See [anki.py](scripts/anki.py) and [anky.sh](scripts/anki.sh) in relation to a how to extract data from [anki](http://www.manythings.org/anki/). Example of how to download and extract `de-en` pair data.
 ```
 cd meta_XLM
-output_path=XLM/data/para
+output_path=/content/data/para
 mkdir $output_path
 chmod +x ./scripts/anki.sh
-./script/anki.sh de,en deu-eng $output_path scripts/anki.py
-#./script/anki.sh en,fr fra-eng $output_path scripts/anki.py
+./scripts/anki.sh de,en deu-eng $output_path scripts/anki.py
+#./scripts/anki.sh en,fr fra-eng $output_path scripts/anki.py
 ```
 After that you will have in `data/para` following files : `de-en.de.txt, de-en.en.txt, deu.txt, deu-eng.zip and _about.txt`  
 
@@ -184,7 +191,7 @@ git clone https://github.com/moses-smt/mosesdecoder tools/mosesdecoder
 git clone https://github.com/glample/fastBPE tools/fastBPE && cd tools/fastBPE && g++ -std=c++11 -pthread -O3 fastBPE/main.cc -IfastBPE -o fast
 ```
   
-Changing parameters in [data.sh](data.sh).  
+Changing parameters in [data.sh](data.sh). Between lines 94 and 100 of [data.sh](data.sh), you have two options corresponding to two scripts to execute according to the distribution of the folders containing your data. Option 2 is chosen by default, kindly uncomment the lines corresponding to your option.  
 With too many BPE codes (depending on the size of the dataset) you may get this [error](https://github.com/glample/fastBPE/issues/7). Decrease the number of codes (e.g. you can dichotomously search for the appropriate/maximum number of codes that make the error disappear)
 
 ```

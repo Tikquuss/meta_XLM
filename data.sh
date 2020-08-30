@@ -90,9 +90,16 @@ echo "======================="
 echo "Processed"
 echo "======================="
 
-chmod +x ../scripts/build_meta_data_multixlm.sh
-. ../scripts/build_meta_data_multixlm.sh $sub_tasks $n_samples $add_para_data_to_mono_data
-# todo : rendre les choses dynamiques comme ceci
+### option 1 : data in the different folders with the name $pair for each pair ###
+#chmod +x ../scripts/build_meta_data_multixlm.sh
+#. ../scripts/build_meta_data_multixlm.sh $sub_tasks $n_samples $add_para_data_to_mono_data
+
+## OR ##
+### option 2 : data in a same folder ###
+chmod +x ../scripts/build_meta_data_monoxlm.sh
+. ../scripts/build_meta_data_monoxlm.sh $sub_tasks $n_samples $add_para_data_to_mono_data
+
+# todo : make things dynamic like this
 #chmod +x $PROCESSED_FILE
 #$PROCESSED_FILE
 

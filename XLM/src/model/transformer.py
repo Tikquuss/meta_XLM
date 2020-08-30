@@ -10,6 +10,14 @@ import math
 import itertools
 import numpy as np
 import torch
+
+"""
+# our
+# https://stackoverflow.com/questions/60478862/how-to-avoid-runtimeerror-error-in-loadlibrarya-for-torch-cat
+import ctypes
+ctypes.cdll.LoadLibrary('caffe2_nvrtc.dll')
+"""
+
 import torch.nn as nn
 import torch.nn.functional as F
 
