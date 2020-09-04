@@ -21,7 +21,7 @@
     "train_n_samples":"-1",
     "valid_n_samples":"-1",
     "test_n_samples":"-1",
-    "remove_long_sentences_train":"True",
+    "remove_long_sentences_train":"False",
     "remove_long_sentences_valid":"False",
     "remove_long_sentences_test":"False",
     

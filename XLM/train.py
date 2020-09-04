@@ -221,13 +221,13 @@ def get_parser():
 
     # our
     # These three parameters will always be rounded to an integer number of batches, so don't be surprised if you see different values than the ones provided.
-    parser.add_argument("--train_n_samples", type=int, default=0, 
+    parser.add_argument("--train_n_samples", type=int, default=-1, 
                         help="Just consider train_n_sample train data")
-    parser.add_argument("--valid_n_samples", type=int, default=0, 
+    parser.add_argument("--valid_n_samples", type=int, default=-1, 
                         help="Just consider valid_n_sample validation data")
-    parser.add_argument("--test_n_samples", type=int, default=0, 
+    parser.add_argument("--test_n_samples", type=int, default=-1, 
                         help="Just consider test_n_sample test data for")
-    parser.add_argument("--remove_long_sentences_train", type=bool_flag, default=True, 
+    parser.add_argument("--remove_long_sentences_train", type=bool_flag, default=False, 
                         help="remove long sentences in train dataset")
     parser.add_argument("--remove_long_sentences_valid", type=bool_flag, default=False, 
                         help="remove long sentences in valid dataset")
@@ -243,6 +243,9 @@ def get_parser():
     parser.add_argument("--log_file_prefix", type=str, default="", 
                         help="Log file prefix. Name of the language to be evaluated in the case of the evaluation of one LM on another.")
 
+    parser.add_argument("--aggregation_metrics", type=str, default="", 
+                        help="name_metric1=mean(m1,m2,...);name_metric2=sum(m4,m5,...);...")
+    
     return parser
 
 
@@ -590,9 +593,20 @@ if __name__ == '__main__':
                     value = False
                 elif value == "True" :
                     value = True
+                
+                """
                 try :
                     setattr(params, key, conf[0](value))
                 except :
+                    setattr(params, key, value)
+                """
+                # Allow to overwrite the parameters of the json configuration file.
+                try :
+                    value = conf[0](value)
+                except :
+                    pass
+                
+                if getattr(params, key, conf[1]) == conf[1] :
                     setattr(params, key, value)
     
     # debug mode

@@ -1295,12 +1295,14 @@ class EncDecTrainer(Trainer):
         assert lambda_coeff >= 0
         if lambda_coeff == 0:
             return
-        assert lang1 == lang3 and lang1 != lang2 and lang2 is not None
+        #assert lang1 == lang3 and lang1 != lang2 and lang2 is not None
         params = self.params
         _encoder = self.encoder.module if params.multi_gpu else self.encoder
         _decoder = self.decoder.module if params.multi_gpu else self.decoder
         
         if not params.meta_learning :
+
+            assert lang1 == lang3 and lang1 != lang2 and lang2 is not None
 
             lang1_id = params.lang2id[lang1]
             lang2_id = params.lang2id[lang2]
@@ -1364,6 +1366,8 @@ class EncDecTrainer(Trainer):
             
             # equivalent to "for task in list of task" in the original algorithm
             for lang1, lang2, lang3, data_key in zip(lang1, lang2, lang3, data_keys) :
+
+                assert lang1 == lang3 and lang1 != lang2 and lang2 is not None
                 
                 assert data_key, "Invalid data_key : can't be None"
                 assert self.data[data_key], "Invalid data_key : " + str(data_key) 

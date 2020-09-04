@@ -95,10 +95,11 @@ config_dic = {
     "train_n_samples":[int, -1],
     "valid_n_samples":[int, -1],
     "test_n_samples":[int, -1],
-    "remove_long_sentences_train":[bool, True],
+    "remove_long_sentences_train":[bool, False],
     "remove_long_sentences_valid":[bool, False],
     "remove_long_sentences_test":[bool, False],
     "same_data_path":[bool, True],
-    #"log_file_prefix":[str, ""],
     #"config_file":[str, ""],
+    #"log_file_prefix":[str, ""],
+    "aggregation_metrics":[str, ""],
 }

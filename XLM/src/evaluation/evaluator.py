@@ -451,7 +451,19 @@ class Evaluator(object):
                             if 'task_(%s)_%s_mt_%s' % (data_key, data_set, value) in scores[data_key].keys()
                         ]
                     )
-                    
+
+        ### aggregation metrics : "name_metric1=mean(m1,m2);name_metric2=sum(m4,m5)..."
+        for ag_metrics in params.aggregation_metrics.split(";") :
+            s = ag_metrics.split("=")
+            name = s[0]
+            assert not name in scores.keys()
+            s = s[1].split("(")
+            reductor = s[0] 
+            assert reductor in ["mean", "sum"]
+            reductor = np.mean if reductor == "mean" else np.sum
+            metrics_list = s[1][:-1].split(",") # withdraw the last parathesis and split
+            scores[name] = reductor([scores[metric] for metric in metrics_list])
+                
         return scores
 
     def evaluate_clm(self, scores, data_set, lang1, lang2, data_key = None):
