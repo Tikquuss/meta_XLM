@@ -20,6 +20,7 @@ assert os.path.isfile(BLEU_SCRIPT_PATH)
 
 # our
 import copy
+import itertools
 
 logger = getLogger()
 
@@ -382,11 +383,24 @@ class Evaluator(object):
         # our : report average metrics per task
         # if params.meta_learning 
         ## clm and mlm
+        def get_step(steps):
+            langs = []
+            for (l1, l2) in steps :
+                if (l1 is None) and (not (l2 is None)) :
+                    langs.append(l2)
+                elif (not (l1 is None)) and (l2 is None) :
+                    langs.append(l1)
+                elif (not (l1 is None)) and (not (l2 is None)) :
+                    langs.append(l1+"_"+l2)
+            langs = list(set(langs))
+            return langs
+
         for objectif in ((['clm'] if evaluate_clm else []) + (['mlm'] if evaluate_mlm else [])) :
             values = ['ppl', 'acc']
             for data_key, params_ in params.meta_params.items() :
-                langs = []
                 steps = params_.mlm_steps if objectif=='mlm' else params_.clm_steps
+                """
+                langs = []
                 for (l1, l2) in steps :
                     if (l1 is None) and (not (l2 is None)) :
                         langs.append(l2)
@@ -394,10 +408,10 @@ class Evaluator(object):
                         langs.append(l1)
                     elif (not (l1 is None)) and (not (l2 is None)) :
                         langs.append(l1+"_"+l2)   
-                        
                 # removes duplicates
                 langs = list(set(langs))
-                    
+                """
+                langs = get_step(steps)
                 for data_set in ['valid', 'test'] :
                     for value in values :
                         a = [scores[data_key]['%s_%s_%s_%s' % (data_set, lang, objectif, value)] 
@@ -452,18 +466,66 @@ class Evaluator(object):
                         ]
                     )
 
+        ## valid_mt_bleu
         ### aggregation metrics : "name_metric1=mean(m1,m2);name_metric2=sum(m4,m5)..."
-        for ag_metrics in params.aggregation_metrics.split(";") :
-            s = ag_metrics.split("=")
-            name = s[0]
-            assert not name in scores.keys()
-            s = s[1].split("(")
-            reductor = s[0] 
-            assert reductor in ["mean", "sum"]
-            reductor = np.mean if reductor == "mean" else np.sum
-            metrics_list = s[1][:-1].split(",") # withdraw the last parathesis and split
-            scores[name] = reductor([scores[metric] for metric in metrics_list])
+
+        score_keys = scores.keys()
+
+        def off_stars(metrics_list):
+            eval_bleu = params.eval_bleu and params.is_master
+            result_list = []
+            for metric in metrics_list :
+                if "*" in metric :
+                    parts = metric.split("_")
+                    assert len(parts) == 4 
+                    re_metrics = []
+                    for i, part in enumerate(parts):
+                        if "*" == part :
+                            if i == 0 :
+                                re_metrics.append(["valid", "test"])
+                            elif i == 1 :
+                                langs = [lang1+"-"+lang2 for lang1, lang2 in set(params.mt_steps + [(l2, l3) for _, l2, l3 in params.bt_steps])]
+                                langs_mlm = get_step(params.mlm_steps)
+                                langs_clm = get_step(params.clm_steps)
+                                langs = langs + langs_mlm + langs_clm
+                                re_metrics.append(langs) 
+                            elif i == 2 :
+                                ap = []
+                                if params.clm_steps :
+                                    ap.append("clm")
+                                if params.mlm_steps :
+                                    ap.append("mlm")
+                                if eval_bleu :
+                                    ap.append("mt")
+                                if ap :
+                                   re_metrics.append(ap) 
+                            elif i == 3 :
+                                re_metrics.append(['ppl', 'acc'] + (['bleu'] if eval_bleu else []))  
+                        else :
+                            re_metrics.append([part])
+                    re_metrics = itertools.product(*re_metrics)
+                    re_metrics = ["_".join(re_metric) for re_metric in re_metrics]
+                    re_metrics = [re_metric for re_metric in re_metrics if re_metric in score_keys]
+                    result_list += re_metrics
+                else :
+                    result_list.append(metric)
+            return result_list
+
+        if params.aggregation_metrics :
+            for ag_metrics in params.aggregation_metrics.split(";") :
+                s = ag_metrics.split("=")
+                name = s[0]
+                assert (not name in score_keys) and (not "*" in name)
+                s = s[1].split("(")
+                reductor = s[0] 
+                assert reductor in ["mean", "sum"]
+                reductor = np.mean if reductor == "mean" else np.sum
+                metrics_list = s[1][:-1].split(",") # withdraw the last parathesis and split
+                metrics_list = off_stars(metrics_list)
+                scores[name] = reductor([scores[metric] for metric in metrics_list])
                 
+        ##############
+
         return scores
 
     def evaluate_clm(self, scores, data_set, lang1, lang2, data_key = None):
@@ -786,6 +848,24 @@ def convert_to_text(batch, lengths, dico, params):
         sentences.append(" ".join(words))
     return sentences
 
+"""
+import threading
+import time, math
+stop_threads = False
+def thread_target(cmd : str, wait : int = 0, timeout : int = None):
+    #128 = programme non lancé, 0 = programme était lancé, bien fermé
+    os.system(cmd)
+    if not timeout :
+        timeout = math.inf
+    t = 0
+    while t < timeout :
+        os.system(cmd)
+        time.sleep(wait)
+        t += wait
+        global stop_threads
+        if stop_threads :
+            break
+"""
 
 def eval_moses_bleu(ref, hyp):
     """
@@ -796,8 +876,18 @@ def eval_moses_bleu(ref, hyp):
     assert os.path.isfile(ref) or os.path.isfile(ref + '0')
     assert os.path.isfile(BLEU_SCRIPT_PATH)
     command = BLEU_SCRIPT_PATH + ' %s < %s'
+    # our
+    if os.name == 'nt' : # windows os
+        command = "perl " + command
+
     p = subprocess.Popen(command % (ref, hyp), stdout=subprocess.PIPE, shell=True)
+
+    #global stop_threads
+    #stop_threads = False
+    #threading.Thread(target = thread_target,  kwargs={"cmd" : "taskkill /f /im notepad.exe", "wait" : 5, "timeout" : None}).start()
     result = p.communicate()[0].decode("utf-8")
+    #stop_threads = True
+    
     if result.startswith('BLEU'):
         return float(result[7:result.index(',')])
     else:
