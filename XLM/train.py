@@ -646,7 +646,7 @@ if __name__ == '__main__':
     parser = get_parser()
     params = parser.parse_args()
     
-    params.device = "d"
+    #params.device = "d"
     if params.device not in ["cpu", "cuda"] :
         params.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     else :
