@@ -503,6 +503,7 @@ class Evaluator(object):
                                 re_metrics.append(['ppl', 'acc'] + (['bleu'] if eval_bleu else []))  
                         else :
                             re_metrics.append([part])
+                    # produit cartesien
                     re_metrics = itertools.product(*re_metrics)
                     re_metrics = ["_".join(re_metric) for re_metric in re_metrics]
                     re_metrics = [re_metric for re_metric in re_metrics if re_metric in score_keys]

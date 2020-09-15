@@ -154,6 +154,9 @@ def load_mono_data(params, data):
                 b = n_batches * params.local_rank + n_batches
                 data['mono_stream'][lang][splt].select_data(a, b)
 
+            # our
+            params.n_samples[splt] = len(data['mono_stream'][lang][splt])
+
             # for denoising auto-encoding and online back-translation, we need a non-stream (batched) dataset
             if lang in params.ae_steps or lang in params.bt_src_langs:
 
@@ -181,6 +184,9 @@ def load_mono_data(params, data):
                     dataset.select_data(a, b)
 
                 data['mono'][lang][splt] = dataset
+
+                # our
+                params.n_samples[splt] = len(dataset)
 
             logger.info("")
 
@@ -255,6 +261,9 @@ def load_para_data(params, data):
             data['para'][(src, tgt)][splt] = dataset
             logger.info("")
 
+            # our
+            params.n_samples[splt] = len(dataset)
+
     logger.info("")
 
 
@@ -316,6 +325,7 @@ def check_data_params(params, check_only_objectifs = False):
     assert len(params.bt_steps) == 0 or not params.encoder_only
     params.bt_src_langs = [l1 for l1, _, _ in params.bt_steps]
 
+    # our
     if not check_only_objectifs :
         # check monolingual datasets
         required_mono = set([l1 for l1, l2 in (params.mlm_steps + params.clm_steps) if l2 is None] + params.ae_steps + params.bt_src_langs)
@@ -370,10 +380,17 @@ def load_data(params):
         logger.info("============ langs: %s" % ", ".join(valeur.langs))
         
         data[lgs] = {}
+
+        ####################
+        if lgs in params.eval_tasks.keys() :
+            eval_task = params.eval_tasks[lgs]
+            #for split in ['train', 'test', 'valid'] :
+            for split in ['train'] :
+                valeur.n_samples[split] = eval_task[split]
     
         # monolingual datasets
         load_mono_data(params = valeur, data = data[lgs])
-        
+    
         # parallel datasets
         valeur.n_gpu_per_node = params.n_gpu_per_node
         load_para_data(params = valeur, data = data[lgs])

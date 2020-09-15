@@ -166,6 +166,7 @@ Parallel and monolingual data can all be in the same folder.
 [OPUS collections](http://opus.nlpl.eu/) is a good source of dataset. We illustrate in the [opus.sh](scripts/opus.sh) script how to download the data from opus and convert it to a text file.  
 Changing parameters ($PARA_PATH and $SRC) in [opus.sh](scripts/opus.sh).
 ```
+cd meta_XLM
 chmod +x ./scripts/opus.sh
 ./scripts/opus.sh de-fr
 ```
@@ -326,8 +327,8 @@ python train.py --config_file $config_file
 ```
 
 When the `ae_steps` and `bt_steps` objects alone are specified, this is unsupervised machine translation, and only requires monolingual data. If the parallel data is available, give `mt_step` a value based on the language pairs for which the data is available.  
-All comments made above about parameter passing and <b>metalearning</b> remain valid here : if you want to exclude a meta-task in an objective, put a blank in its place. Suppose, in the case of <b>metalearning</b>, we want to exclude from `"ae_steps":"en,fr|en,de|de-fr"` the meta-task:
-- `de-en` : `ae_steps`  becomes `"ae_steps":"en,fr||de-fr"` 
+All comments made above about parameter passing and <b>metalearning</b> remain valid here : if you want to exclude a meta-task in an objective, put a blank in its place. Suppose, in the case of <b>metalearning</b>, we want to exclude from `"ae_steps":"en,fr|en,de|de,fr"` the meta-task:
+- `de-en` : `ae_steps`  becomes `"ae_steps":"en,fr||de,fr"` 
 - `de-fr` : `ae_steps`  becomes `"ae_steps":"en,fr|de,en|"`  
 
 ###### Description of some essential parameters  

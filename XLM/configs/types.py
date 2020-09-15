@@ -102,4 +102,5 @@ config_dic = {
     #"config_file":[str, ""],
     #"log_file_prefix":[str, ""],
     "aggregation_metrics":[str, ""],
+    "eval_tasks":[str, ""],
 }

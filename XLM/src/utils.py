@@ -18,6 +18,8 @@ import torch
 
 from .logger import create_logger
 
+# our
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 FALSY_STRINGS = {'off', 'false', '0'}
 TRUTHY_STRINGS = {'on', 'true', '1'}
@@ -50,6 +52,9 @@ def initialize_exp(params):
     - dump parameters
     - create a logger
     """
+    # our : set device
+    global device
+    device = params.device
     # dump parameters
     get_dump_path(params)
     pickle.dump(params, open(os.path.join(params.dump_path, 'params.pkl'), 'wb'))
@@ -138,7 +143,9 @@ def to_cuda(*args):
     """
     Move tensors to CUDA.
     """
-    return [None if x is None else x.cuda() for x in args]
+    # our
+    global device
+    return [None if x is None else x.to(device) for x in args]
 
 
 def restore_segmentation(path):
