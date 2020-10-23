@@ -97,10 +97,7 @@ def get_parser():
     return parser
 
 def get_abreviation(lang_name):
-    try :
-        return abreviation[lang_name]
-    except KeyError :
-        return lang_name
+    return abreviation.get(lang_name, lang_name)
     
 process = []
 def get_data_from_bible(csv_path, output_dir, data_type = "para", langues=[], livres=[], cell_error = "__Error__"):
@@ -150,7 +147,7 @@ def get_data_from_bible(csv_path, output_dir, data_type = "para", langues=[], li
             elif data_type == "mono":
                 #repertoire = [repertoire + "/" + li_abrev, repertoire +"/"+ lj_abrev]
                 repertoire = [repertoire, repertoire]
-                for rep in repertoire :
+                for rep in list(set(repertoire)) :
                     if not os.path.exists(rep):
                         os.makedirs(rep)
                 repertoire = [r +"/" for r in repertoire]
@@ -170,7 +167,7 @@ def get_data_from_bible(csv_path, output_dir, data_type = "para", langues=[], li
                                 filenames = []
                                 try :
                                     fieldnames = next(f_csv)
-                                except StopIteration as si :
+                                except StopIteration :
                                     pass
                                 try :
                                     index_i = fieldnames.index(li)
@@ -185,9 +182,9 @@ def get_data_from_bible(csv_path, output_dir, data_type = "para", langues=[], li
                                             txtfile2.writelines(y_i+'\n')
                                         else :
                                             errors = errors + 1
-                                except Exception as ex:
+                                except :
                                     pass
-                        except Exception as ex :
+                        except :
                             pass
             
             stat = False

@@ -804,6 +804,8 @@ if __name__ == '__main__':
                 #eval_tasks_dico[eval_task[0]]["test"] = eval_task[1]
                 #eval_tasks_dico[eval_task[0]]["valid"] = eval_task[1]
             params.eval_tasks = eval_tasks_dico
+        else :
+            params.eval_tasks = {}
     else :
         params.eval_tasks = {}
         
