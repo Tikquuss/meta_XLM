@@ -1,3 +1,13 @@
+```
+@misc{
+pascal2021on,
+title={On the use of linguistic similarities to improve Neural Machine Translation for African Languages},
+author={Tikeng Notsawo Pascal and NANDA ASSOBJIO Brice Yvan and James Assiene},
+year={2021},
+url={https://openreview.net/forum?id=Q5ZxoD2LqcI}
+}
+```
+
 ## I. Cross-lingual language model pretraining ([XLM](https://github.com/facebookresearch/XLM)) 
 
 XLM supports multi-GPU and multi-node training, and contains code for:
@@ -492,11 +502,24 @@ When the evaluation is finished you will see a file named `eval.log` in the `$du
 
 ## IV. References
 
-Please cite [[1]](https://arxiv.org/abs/1901.07291) and [[2]](https://arxiv.org/abs/1911.02116) if you found the resources in this repository useful.
+Please cite [[1]](https://openreview.net/forum?id=Q5ZxoD2LqcI) and/or  [[2]](https://arxiv.org/abs/1901.07291) and/or [[3]](https://arxiv.org/abs/1911.02116) if you found the resources in this repository useful.
+
+### On the use of linguistic similarities to improve Neural Machine Translation for African Languages
+
+[1] Tikeng Notsawo Pascal, NANDA ASSOBJIO Brice Yvan and James Assiene
+```
+@misc{
+pascal2021on,
+title={On the use of linguistic similarities to improve Neural Machine Translation for African Languages},
+author={Tikeng Notsawo Pascal and NANDA ASSOBJIO Brice Yvan and James Assiene},
+year={2021},
+url={https://openreview.net/forum?id=Q5ZxoD2LqcI}
+}
+```
 
 ### Cross-lingual Language Model Pretraining
 
-[1] G. Lample *, A. Conneau * [*Cross-lingual Language Model Pretraining*](https://arxiv.org/abs/1901.07291) and [facebookresearch/XLM](https://github.com/facebookresearch/XLM)
+[2] G. Lample *, A. Conneau * [*Cross-lingual Language Model Pretraining*](https://arxiv.org/abs/1901.07291) and [facebookresearch/XLM](https://github.com/facebookresearch/XLM)
 
 \* Equal contribution. Order has been determined with a coin flip.
 
@@ -511,7 +534,7 @@ Please cite [[1]](https://arxiv.org/abs/1901.07291) and [[2]](https://arxiv.org/
 
 ### Model-Agnostic Meta-Learning for Fast Adaptation of Deep Networks
 
-[2] Chelsea Finn, Pieter Abbeel, Sergey Levine [*Model-Agnostic Meta-Learning for Fast Adaptation of Deep Networks*](https://arxiv.org/abs/1911.02116) and [cbfinn/maml](https://github.com/cbfinn/maml)
+[3] Chelsea Finn, Pieter Abbeel, Sergey Levine [*Model-Agnostic Meta-Learning for Fast Adaptation of Deep Networks*](https://arxiv.org/abs/1911.02116) and [cbfinn/maml](https://github.com/cbfinn/maml)
 
 ```
 @article{Chelsea et al.,
