@@ -676,7 +676,8 @@ class Evaluator(object):
 
             i = i + 1
             if i == 10 :
-                break
+                #break
+                pass
         # compute perplexity and prediction accuracy
         ppl_name = '%s_%s_mlm_ppl' % (data_set, l1l2)
         acc_name = '%s_%s_mlm_acc' % (data_set, l1l2)
